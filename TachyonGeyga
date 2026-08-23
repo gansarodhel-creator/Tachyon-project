@@ -1,4 +1,4 @@
---// TACHYON v1.3.5 | FULL COMBINED SCRIPT
+--// TACHYON v1.3.5 | FULL COMBINED SCRIPT (UPDATED WITH AUTO-DELETE BRICKS EVENT)
 --// Features: Instant Anti MaptideNan, ToSpawn, Clear Fog, Uncursed, Anti-Fling, Tags, UI & Commands
 
 local player = game.Players.LocalPlayer
@@ -87,25 +87,21 @@ end
 -- INSTANT ANTI MAPTIDE-NAN SYSTEM (SECEPAT KILAT)
 ----------------------------------------------------------
 local antiMaptideEnabled = false
-local instantTeleportConnection = nil
 
 local function setAntiMaptide(state)
 	antiMaptideEnabled = state
 	if antiMaptideEnabled then
-		-- Langsung teleport jika karakter sudah ada saat di-klik
 		local char = player.Character
 		local hrp = char and char:FindFirstChild("HumanoidRootPart")
 		if hrp then
 			hrp.CFrame = CFrame.new(-99, 193, -112)
 		end
-		
 		sendBlueChatMessage("[TACHYON] Anti MaptideNan: INSTANT ON ⚡ (-99, 193, -112)")
 	else
 		sendBlueChatMessage("[TACHYON] Anti MaptideNan: OFF ❌")
 	end
 end
 
--- Memantau kemunculan karakter secara instan tanpa jeda waktu/delay
 player.CharacterAdded:Connect(function(newChar)
 	if antiMaptideEnabled then
 		local hrp = newChar:WaitForChild("HumanoidRootPart", 2)
@@ -744,7 +740,6 @@ sloganLabel.Font = Enum.Font.SourceSansBold
 sloganLabel.TextSize = 13
 sloganLabel.Parent = infoCard
 
--- KOTAK STATUS MEMBER/OWNER
 local statusBox = Instance.new("Frame")
 statusBox.Size = UDim2.new(1, -20, 0, 70)
 statusBox.Position = UDim2.new(0, 10, 0, 118)
@@ -890,7 +885,6 @@ antiVisualBtn.TextSize = 13
 antiVisualBtn.LayoutOrder = 1
 antiVisualBtn.Parent = visualTab
 styleButton(antiVisualBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180))
-
 antiVisualBtn.MouseButton1Click:Connect(function() antiVisual() end)
 
 local antiLagBtn = Instance.new("TextButton")
@@ -902,7 +896,6 @@ antiLagBtn.TextSize = 13
 antiLagBtn.LayoutOrder = 2
 antiLagBtn.Parent = visualTab
 styleButton(antiLagBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180))
-
 antiLagBtn.MouseButton1Click:Connect(function() antiLag() end)
 
 local clearFogBtn = Instance.new("TextButton")
@@ -914,10 +907,7 @@ clearFogBtn.TextSize = 13
 clearFogBtn.LayoutOrder = 3
 clearFogBtn.Parent = visualTab
 styleButton(clearFogBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180))
-
-clearFogBtn.MouseButton1Click:Connect(function()
-	clearFog()
-end)
+clearFogBtn.MouseButton1Click:Connect(function() clearFog() end)
 
 local uncursedBtn = Instance.new("TextButton")
 uncursedBtn.Size = UDim2.new(0, 220, 0, 32)
@@ -928,10 +918,7 @@ uncursedBtn.TextSize = 13
 uncursedBtn.LayoutOrder = 4
 uncursedBtn.Parent = visualTab
 styleButton(uncursedBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180))
-
-uncursedBtn.MouseButton1Click:Connect(function()
-	uncursed()
-end)
+uncursedBtn.MouseButton1Click:Connect(function() uncursed() end)
 
 ----------------------------------------------------------
 -- [4] TAB TCO
@@ -973,7 +960,7 @@ sendChatBtn.MouseButton1Click:Connect(function()
 end)
 
 ----------------------------------------------------------
--- [5] TAB TROLL
+-- [5] TAB TROLL (DELCUBES MENGGUNAKAN REMOTE EVENT 'Event')
 ----------------------------------------------------------
 local flingBtn = Instance.new("TextButton")
 flingBtn.Size = UDim2.new(0, 220, 0, 32)
@@ -1013,6 +1000,71 @@ flingBtn.MouseButton1Click:Connect(function()
 	else
 		flingBtn.Text = "Fling Touch: OFF"
 		styleButton(flingBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+	end
+end)
+
+-- Tombol DelCubes menggunakan RemoteEvent 'Event' asli milik game
+local delCubesBtn = Instance.new("TextButton")
+delCubesBtn.Size = UDim2.new(0, 220, 0, 32)
+delCubesBtn.Text = "DelCubes"
+delCubesBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+delCubesBtn.Font = Enum.Font.SourceSansBold
+delCubesBtn.TextSize = 13
+delCubesBtn.LayoutOrder = 2
+delCubesBtn.Parent = trollTab
+styleButton(delCubesBtn, Color3.fromRGB(220, 50, 50), Color3.fromRGB(150, 30, 30))
+
+delCubesBtn.MouseButton1Click:Connect(function()
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	local backpack = player:FindFirstChild("Backpack")
+	
+	-- Equip tool Delete jika ada
+	local deleteTool = (backpack and backpack:FindFirstChild("Delete")) or (char and char:FindFirstChild("Delete"))
+	if deleteTool and hum then
+		pcall(function() hum:EquipTool(deleteTool) end)
+		sendBlueChatMessage("[TACHYON] DelCubes: Tool 'Delete' equipped! 🗑️")
+		task.wait(0.1)
+	end
+	
+	local remoteEvent = player:FindFirstChild("Event")
+	local bricksFolder = workspace:FindFirstChild("Bricks")
+	
+	if bricksFolder and remoteEvent then
+		local count = 0
+		for _, playerFolder in ipairs(bricksFolder:GetChildren()) do
+			-- Jangan hapus folder milik player sendiri jika ingin aman, atau hapus semua folder player lain
+			if playerFolder.Name ~= player.Name then
+				for _, brick in ipairs(playerFolder:GetChildren()) do
+					if brick:IsA("BasePart") then
+						pcall(function()
+							-- Kirim koordinat posisi brick ke server lewat RemoteEvent 'Event' untuk menghapusnya secara server-side
+							local args = {
+								[1] = brick,
+								[2] = Enum.NormalId.Top,
+								[3] = brick.Position,
+								[4] = "delete" -- Mengubah parameter aksi menjadi delete (atau mencoba mengirim referensi brick)
+							}
+							remoteEvent:FireServer(unpack(args))
+							
+							-- Cadangan alternatif jika server membaca posisi
+							local argsPos = {
+								[1] = brick,
+								[2] = Enum.NormalId.Top,
+								[3] = brick.Position,
+								[4] = "normal"
+							}
+							remoteEvent:FireServer(unpack(argsPos))
+							
+							count = count + 1
+						end)
+					end
+				end
+			end
+		end
+		sendBlueChatMessage("[TACHYON] Sent delete request for " .. count .. " bricks via server event! ✨")
+	else
+		sendBlueChatMessage("[TACHYON] Error: Bricks folder or Player Event not found!")
 	end
 end)
 
@@ -1074,7 +1126,6 @@ antiVampBtn.TextSize = 13
 antiVampBtn.LayoutOrder = 3
 antiVampBtn.Parent = miscTab
 styleButton(antiVampBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180))
-
 antiVampBtn.MouseButton1Click:Connect(function() antiVamp() end)
 
 local disarmDeathBtn = Instance.new("TextButton")
@@ -1131,10 +1182,7 @@ toSpawnBtn.TextSize = 13
 toSpawnBtn.LayoutOrder = 6
 toSpawnBtn.Parent = miscTab
 styleButton(toSpawnBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180))
-
-toSpawnBtn.MouseButton1Click:Connect(function()
-	teleportToSpawn()
-end)
+toSpawnBtn.MouseButton1Click:Connect(function() teleportToSpawn() end)
 
 ----------------------------------------------------------
 -- CHAT COMMAND SYSTEM
@@ -1197,15 +1245,45 @@ player.Chatted:Connect(function(msg)
 	elseif cmd == ":spychat" then
 		rainbowSystemMsg(table.concat(args, " ", 2))
 	elseif cmd == ":disarmdeath" then
-		disarmDeathEnabled = true
-		disarmDeathBtn.Text = "Disarm Death: ON"
-		styleButton(disarmDeathBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60))
-		sendBlueChatMessage("[TACHYON] Disarm Death Activated ✅")
-	elseif cmd == ":undisarmdeath" then
-		disarmDeathEnabled = false
-		disarmDeathBtn.Text = "Disarm Death: OFF"
-		styleButton(disarmDeathBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
-		sendBlueChatMessage("[TACHYON] Disarm Death Deactivated ❌")
+        disarmDeathEnabled = true
+        disarmDeathBtn.Text = "Disarm Death: ON"
+        styleButton(disarmDeathBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60))
+        sendBlueChatMessage("[TACHYON] Disarm Death Activated ✅")
+    elseif cmd == ":undisarmdeath" then
+        disarmDeathEnabled = false
+        disarmDeathBtn.Text = "Disarm Death: OFF"
+        styleButton(disarmDeathBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+        sendBlueChatMessage("[TACHYON] Disarm Death Deactivated ❌")
+	elseif cmd == ":delcubes" then
+		local char = player.Character
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
+		local tool = player.Backpack:FindFirstChild("Delete") or (char and char:FindFirstChild("Delete"))
+		if tool and hum then
+			hum:EquipTool(tool)
+			task.wait(0.1)
+		end
+		local remoteEvent = player:FindFirstChild("Event")
+		local bricksFolder = workspace:FindFirstChild("Bricks")
+		if bricksFolder and remoteEvent then
+			for _, playerFolder in ipairs(bricksFolder:GetChildren()) do
+				if playerFolder.Name ~= player.Name then
+					for _, brick in ipairs(playerFolder:GetChildren()) do
+						if brick:IsA("BasePart") then
+							pcall(function()
+								local args = {
+									[1] = brick,
+									[2] = Enum.NormalId.Top,
+									[3] = brick.Position,
+									[4] = "delete"
+								}
+								remoteEvent:FireServer(unpack(args))
+							end)
+						end
+					end
+				end
+			end
+		end
+		sendBlueChatMessage("[TACHYON] DelCubes executed via chat! 🗑️")
 	end
 end)
 
