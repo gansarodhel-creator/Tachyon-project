@@ -1,5 +1,5 @@
---// TACHYON v1.3.5 | FULL COMBINED SCRIPT (UPDATED WITH VOID FLING & DELCUBES)
---// Features: Instant Anti MaptideNan, ToSpawn, Clear Fog, Uncursed, Anti-Fling, Tags, UI, Commands & Void Fling Kill
+--// TACHYON v1.3.5 | FULL COMBINED SCRIPT (UPDATED WITH AUTO-DELETE BRICKS EVENT)
+--// Features: Instant Anti MaptideNan, ToSpawn, Clear Fog, Uncursed, Anti-Fling, Tags, UI & Commands
 
 local player = game.Players.LocalPlayer
 local plr = player
@@ -960,78 +960,48 @@ sendChatBtn.MouseButton1Click:Connect(function()
 end)
 
 ----------------------------------------------------------
--- [5] TAB TROLL (FLING, DELCUBES & KILL TARGET VOID FLING)
+-- [5] TAB TROLL (DELCUBES MENGGUNAKAN REMOTE EVENT 'Event')
 ----------------------------------------------------------
--- Tombol Kill Target (Void Fling Super Kuat & Menembus Anti-Fling)
-local killBtn = Instance.new("TextButton")
-killBtn.Size = UDim2.new(0, 220, 0, 32)
-killBtn.Text = "Kill Target (Void Fling)"
-killBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-killBtn.Font = Enum.Font.SourceSansBold
-killBtn.TextSize = 13
-killBtn.LayoutOrder = 4
-killBtn.Parent = trollTab
-styleButton(killBtn, Color3.fromRGB(220, 50, 50), Color3.fromRGB(150, 30, 30))
+local flingBtn = Instance.new("TextButton")
+flingBtn.Size = UDim2.new(0, 220, 0, 32)
+flingBtn.Text = "Fling Touch: OFF"
+flingBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+flingBtn.Font = Enum.Font.SourceSansBold
+flingBtn.TextSize = 13
+flingBtn.LayoutOrder = 1
+flingBtn.Parent = trollTab
+styleButton(flingBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
 
-killBtn.MouseButton1Click:Connect(function()
-	local targetName = string.lower(targetBox.Text)
-	if targetName == "" then
-		sendBlueChatMessage("[TACHYON] Error: Masukkan nama target terlebih dahulu!")
-		return
-	end
-	
-	local targetPlayer = nil
-	for _, p in ipairs(Players:GetPlayers()) do
-		if p ~= player and (string.find(string.lower(p.Name), targetName) or string.find(string.lower(p.DisplayName), targetName)) then
-			targetPlayer = p
-			break
+local hiddenfling = false
+local function flingProcess()
+	local c, hrp, vel, movel = nil, nil, nil, 0.1
+	while hiddenfling do
+		RunService.Heartbeat:Wait()
+		c = player.Character
+		hrp = c and c:FindFirstChild("HumanoidRootPart")
+		if hrp then
+			vel = hrp.Velocity
+			hrp.Velocity = vel * 10000 + Vector3.new(0, 10000, 0)
+			RunService.RenderStepped:Wait()
+			hrp.Velocity = vel
+			RunService.Stepped:Wait()
+			hrp.Velocity = vel + Vector3.new(0, movel, 0)
+			movel = -movel
 		end
 	end
-	
-	if not targetPlayer then
-		sendBlueChatMessage("[TACHYON] Error: Target '" .. targetBox.Text .. "' tidak ditemukan!")
-		return
-	end
-	
-	sendBlueChatMessage("[TACHYON] Memulai Void Fling brutal ke target: " .. targetPlayer.Name .. "! 🌪️💀")
-	
-	task.spawn(function()
-		local connection
-		connection = RunService.Heartbeat:Connect(function()
-			local myChar = player.Character
-			local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
-			local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
-			
-			local tChar = targetPlayer.Character
-			local tHrp = tChar and tChar:FindFirstChild("HumanoidRootPart")
-			local tHum = tChar and tChar:FindFirstChildOfClass("Humanoid")
-			
-			-- Berhenti jika target mati, keluar game, atau karakter kita mati
-			if not tChar or not tHrp or not tHum or tHum.Health <= 0 or not myChar or not myHrp or (myHum and myHum.Health <= 0) then
-				if connection then connection:Disconnect() end
-				sendBlueChatMessage("[TACHYON] Target " .. targetPlayer.Name .. " berhasil dijatuhkan ke void (Mati)! ✅")
-				return
-			end
-			
-			-- Matikan collision karakter kita agar menyatu dengan target
-			pcall(function()
-				for _, part in ipairs(myChar:GetDescendants()) do
-					if part:IsA("BasePart") then part.CanCollide = false end
-				end
-			end)
-			
-			-- Paksa posisi dan kunci rotasi target, lalu berikan dorongan ekstrem langsung ke bawah (Void)
-			pcall(function()
-				myHrp.CFrame = tHrp.CFrame
-				-- Menggunakan AssemblyVelocity tingkat tinggi agar tembus perlindungan anti-fling player lain
-				tHrp.AssemblyLinearVelocity = Vector3.new(math.random(-1000, 1000), -100000, math.random(-1000, 1000))
-				tHrp.AssemblyAngularVelocity = Vector3.new(50000, 50000, 50000)
-				myHrp.AssemblyLinearVelocity = Vector3.new(0, -100000, 0)
-			end)
-		end)
-	end)
-end)
+end
 
+flingBtn.MouseButton1Click:Connect(function()
+	hiddenfling = not hiddenfling
+	if hiddenfling then
+		flingBtn.Text = "Fling Touch: ON"
+		styleButton(flingBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60))
+		task.spawn(flingProcess)
+	else
+		flingBtn.Text = "Fling Touch: OFF"
+		styleButton(flingBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+	end
+end)
 
 -- Tombol DelCubes menggunakan RemoteEvent 'Event' asli milik game
 local delCubesBtn = Instance.new("TextButton")
@@ -1049,6 +1019,7 @@ delCubesBtn.MouseButton1Click:Connect(function()
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	local backpack = player:FindFirstChild("Backpack")
 	
+	-- Equip tool Delete jika ada
 	local deleteTool = (backpack and backpack:FindFirstChild("Delete")) or (char and char:FindFirstChild("Delete"))
 	if deleteTool and hum then
 		pcall(function() hum:EquipTool(deleteTool) end)
@@ -1062,17 +1033,29 @@ delCubesBtn.MouseButton1Click:Connect(function()
 	if bricksFolder and remoteEvent then
 		local count = 0
 		for _, playerFolder in ipairs(bricksFolder:GetChildren()) do
+			-- Jangan hapus folder milik player sendiri jika ingin aman, atau hapus semua folder player lain
 			if playerFolder.Name ~= player.Name then
 				for _, brick in ipairs(playerFolder:GetChildren()) do
 					if brick:IsA("BasePart") then
 						pcall(function()
+							-- Kirim koordinat posisi brick ke server lewat RemoteEvent 'Event' untuk menghapusnya secara server-side
 							local args = {
 								[1] = brick,
 								[2] = Enum.NormalId.Top,
 								[3] = brick.Position,
-								[4] = "delete"
+								[4] = "delete" -- Mengubah parameter aksi menjadi delete (atau mencoba mengirim referensi brick)
 							}
 							remoteEvent:FireServer(unpack(args))
+							
+							-- Cadangan alternatif jika server membaca posisi
+							local argsPos = {
+								[1] = brick,
+								[2] = Enum.NormalId.Top,
+								[3] = brick.Position,
+								[4] = "normal"
+							}
+							remoteEvent:FireServer(unpack(argsPos))
+							
 							count = count + 1
 						end)
 					end
@@ -1083,82 +1066,6 @@ delCubesBtn.MouseButton1Click:Connect(function()
 	else
 		sendBlueChatMessage("[TACHYON] Error: Bricks folder or Player Event not found!")
 	end
-end)
-
--- Kotak Masukkan Nama Target (TextBox) untuk Kill
-local targetBox = Instance.new("TextBox")
-targetBox.Size = UDim2.new(0, 220, 0, 30)
-targetBox.PlaceholderText = "Masukkan Nama Target..."
-targetBox.Text = ""
-targetBox.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
-targetBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-targetBox.Font = Enum.Font.SourceSans
-targetBox.TextSize = 13
-targetBox.LayoutOrder = 3
-targetBox.Parent = trollTab
-Instance.new("UICorner", targetBox).CornerRadius = UDim.new(0, 6)
-
--- Tombol Kill Target (Void Fling)
-local killBtn = Instance.new("TextButton")
-killBtn.Size = UDim2.new(0, 220, 0, 32)
-killBtn.Text = "Kill Target (Void Fling)"
-killBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-killBtn.Font = Enum.Font.SourceSansBold
-killBtn.TextSize = 13
-killBtn.LayoutOrder = 4
-killBtn.Parent = trollTab
-styleButton(killBtn, Color3.fromRGB(220, 50, 50), Color3.fromRGB(150, 30, 30))
-
-killBtn.MouseButton1Click:Connect(function()
-	local targetName = string.lower(targetBox.Text)
-	if targetName == "" then
-		sendBlueChatMessage("[TACHYON] Error: Masukkan nama target terlebih dahulu!")
-		return
-	end
-	
-	local targetPlayer = nil
-	for _, p in ipairs(Players:GetPlayers()) do
-		if p ~= player and (string.find(string.lower(p.Name), targetName) or string.find(string.lower(p.DisplayName), targetName)) then
-			targetPlayer = p
-			break
-		end
-	end
-	
-	if not targetPlayer then
-		sendBlueChatMessage("[TACHYON] Error: Target '" .. targetBox.Text .. "' tidak ditemukan!")
-		return
-	end
-	
-	sendBlueChatMessage("[TACHYON] Flinging target " .. targetPlayer.Name .. " ke void! 🌪️💀")
-	
-	task.spawn(function()
-		local connection
-		connection = RunService.Heartbeat:Connect(function()
-			local myChar = player.Character
-			local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
-			local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
-			
-			local tChar = targetPlayer.Character
-			local tHrp = tChar and tChar:FindFirstChild("HumanoidRootPart")
-			local tHum = tChar and tChar:FindFirstChildOfClass("Humanoid")
-			
-			if not tChar or not tHrp or not tHum or tHum.Health <= 0 or not myChar or not myHrp or (myHum and myHum.Health <= 0) then
-				if connection then connection:Disconnect() end
-				sendBlueChatMessage("[TACHYON] Target " .. targetPlayer.Name .. " berhasil dijatuhkan ke void (Mati)! ✅")
-				return
-			end
-			
-			pcall(function()
-				for _, part in ipairs(myChar:GetDescendants()) do
-					if part:IsA("BasePart") then part.CanCollide = false end
-				end
-			end)
-			
-			myHrp.CFrame = tHrp.CFrame
-			myHrp.Velocity = Vector3.new(math.random(-500, 500), -50000, math.random(-500, 500))
-			tHrp.Velocity = Vector3.new(0, -50000, 0)
-		end)
-	end)
 end)
 
 ----------------------------------------------------------
