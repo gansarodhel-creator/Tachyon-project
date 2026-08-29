@@ -1032,6 +1032,7 @@ killBtn.MouseButton1Click:Connect(function()
 	end)
 end)
 
+
 -- Tombol DelCubes menggunakan RemoteEvent 'Event' asli milik game
 local delCubesBtn = Instance.new("TextButton")
 delCubesBtn.Size = UDim2.new(0, 220, 0, 32)
