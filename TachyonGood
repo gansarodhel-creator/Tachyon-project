@@ -1,5 +1,5 @@
---// TACHYON v1.3.5 | FULL COMBINED SCRIPT (UPDATED WITH AUTO-DELETE BRICKS EVENT)
---// Features: Instant Anti MaptideNan, ToSpawn, Clear Fog, Uncursed, Anti-Fling, Tags, UI & Commands
+--// TACHYON v1.3.6 | SUPREME FULL-SCREEN & CLEAN EDITION
+--// Features: 2S/10-Bricks Spam Alarm, Enlighten Alarm, TCO Info Label, Full-Screen IgnoreInset, SoundID (128679057023142), Anti-Fling, Tags, UI & Commands (SpyChat Removed)
 
 local player = game.Players.LocalPlayer
 local plr = player
@@ -11,6 +11,8 @@ local Lighting = game:GetService("Lighting")
 local Stats = game:GetService("Stats")
 local StarterGui = game:GetService("StarterGui")
 local CoreGui = game:GetService("CoreGui")
+local SoundService = game:GetService("SoundService")
+local TweenService = game:GetService("TweenService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 
 local PlayerGui = player:WaitForChild("PlayerGui", 10)
@@ -18,6 +20,131 @@ local PlayerGui = player:WaitForChild("PlayerGui", 10)
 -- Clean up old UI
 if CoreGui:FindFirstChild("TachyonWareUI") then CoreGui.TachyonWareUI:Destroy() end
 if PlayerGui:FindFirstChild("TachyonWareUI") then PlayerGui.TachyonWareUI:Destroy() end
+if CoreGui:FindFirstChild("TachyonIntro") then CoreGui.TachyonIntro:Destroy() end
+
+----------------------------------------------------------
+-- MASSIVE FULLSCREEN INTRO (IGNORE GUI INSET FIX)
+----------------------------------------------------------
+local introGui = Instance.new("ScreenGui")
+introGui.Name = "TachyonIntro"
+introGui.ResetOnSpawn = false
+introGui.IgnoreGuiInset = true
+introGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+introGui.Parent = CoreGui
+
+local bg = Instance.new("Frame", introGui)
+bg.Size = UDim2.new(1, 0, 1, 0)
+bg.Position = UDim2.new(0, 0, 0, 0)
+bg.BackgroundColor3 = Color3.fromRGB(2, 2, 4)
+bg.BorderSizePixel = 0
+bg.ZIndex = 10
+
+local introSound = Instance.new("Sound")
+introSound.SoundId = "rbxassetid://128679057023142"
+introSound.Volume = 10
+introSound.Parent = SoundService
+introSound:Play()
+
+local function createOrb(pos, size, color1, color2)
+	local orb = Instance.new("Frame", bg)
+	orb.Size = size
+	orb.Position = pos
+	orb.BackgroundTransparency = 0.15
+	orb.BorderSizePixel = 0
+	orb.ZIndex = 11
+	
+	local corner = Instance.new("UICorner", orb)
+	corner.CornerRadius = UDim.new(1, 0)
+	
+	local grad = Instance.new("UIGradient", orb)
+	grad.Color = ColorSequence.new{
+		ColorSequenceKeypoint.new(0, color1),
+		ColorSequenceKeypoint.new(1, color2)
+	}
+	return orb
+end
+
+createOrb(UDim2.new(-0.15, 0, -0.15, 0), UDim2.new(0, 600, 0, 600), Color3.fromRGB(255, 0, 80), Color3.fromRGB(255, 120, 0))
+createOrb(UDim2.new(0.6, 0, 0.4, 0), UDim2.new(0, 700, 0, 700), Color3.fromRGB(150, 0, 255), Color3.fromRGB(255, 50, 0))
+createOrb(UDim2.new(0.35, 0, -0.08, 0), UDim2.new(0, 160, 0, 160), Color3.fromRGB(0, 195, 255), Color3.fromRGB(255, 230, 0))
+createOrb(UDim2.new(-0.05, 0, 0.65, 0), UDim2.new(0, 200, 0, 200), Color3.fromRGB(255, 0, 150), Color3.fromRGB(0, 100, 255))
+createOrb(UDim2.new(0.85, 0, -0.05, 0), UDim2.new(0, 140, 0, 140), Color3.fromRGB(255, 220, 0), Color3.fromRGB(255, 0, 0))
+
+local centerBox = Instance.new("Frame", bg)
+centerBox.Size = UDim2.new(0, 700, 0, 200)
+centerBox.Position = UDim2.new(0.5, -350, 0.5, -100)
+centerBox.BackgroundTransparency = 1
+centerBox.ZIndex = 15
+
+local titleLabel = Instance.new("TextLabel", centerBox)
+titleLabel.Size = UDim2.new(1, 0, 0, 100)
+titleLabel.Position = UDim2.new(0, 0, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "⚡ TACHYON WARE ⚡"
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextSize = 64
+titleLabel.TextTransparency = 1
+titleLabel.TextStrokeTransparency = 0.1
+titleLabel.TextStrokeColor3 = Color3.fromRGB(0, 162, 255)
+titleLabel.ZIndex = 16
+
+local textGrad = Instance.new("UIGradient", titleLabel)
+textGrad.Color = ColorSequence.new{
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 195, 255)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 230, 0))
+}
+textGrad.Rotation = 90
+
+local underline = Instance.new("Frame", centerBox)
+underline.Size = UDim2.new(0, 0, 0, 6)
+underline.Position = UDim2.new(0.5, 0, 0, 115)
+underline.AnchorPoint = Vector2.new(0.5, 0)
+underline.BackgroundColor3 = Color3.fromRGB(255, 230, 0)
+underline.BorderSizePixel = 0
+underline.ZIndex = 16
+
+local underlineGrad = Instance.new("UIGradient", underline)
+underlineGrad.Color = ColorSequence.new{
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 195, 255)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 230, 0))
+}
+
+local subText = Instance.new("TextLabel", centerBox)
+subText.Size = UDim2.new(1, 0, 0, 40)
+subText.Position = UDim2.new(0, 0, 0, 135)
+subText.BackgroundTransparency = 1
+subText.Text = "SYSTEM INITIALIZED • FULLSCREEN OVERRIDE"
+subText.Font = Enum.Font.Code
+subText.TextSize = 16
+subText.TextColor3 = Color3.fromRGB(150, 200, 255)
+subText.TextTransparency = 1
+subText.ZIndex = 16
+
+TweenService:Create(titleLabel, TweenInfo.new(0.8, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
+TweenService:Create(subText, TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0.2}):Play()
+TweenService:Create(underline, TweenInfo.new(1, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {Size = UDim2.new(0, 580, 0, 6)}):Play()
+
+local startTime = tick()
+local shakeConn
+shakeConn = RunService.RenderStepped:Connect(function()
+	local elapsed = tick() - startTime
+	if elapsed < 3.8 then
+		local intensity = math.clamp(5 - elapsed, 1, 5)
+		local offsetX = math.random(-math.floor(intensity), math.floor(intensity))
+		local offsetY = math.random(-math.floor(intensity), math.floor(intensity))
+		centerBox.Position = UDim2.new(0.5, -350 + offsetX, 0.5, -100 + offsetY)
+	else
+		shakeConn:Disconnect()
+		TweenService:Create(bg, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 1}):Play()
+		TweenService:Create(titleLabel, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 1}):Play()
+		TweenService:Create(underline, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 1}):Play()
+		TweenService:Create(subText, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 1}):Play()
+		task.wait(0.6)
+		introGui:Destroy()
+	end
+end)
+
+task.wait(3.8)
 
 ----------------------------------------------------------
 -- CORE SYSTEM FUNCTIONS
@@ -41,13 +168,11 @@ local function sendBlueChatMessage(msgText)
 end
 
 ----------------------------------------------------------
--- VISUAL UTILITIES (Clear Fog & Uncursed)
+-- VISUAL UTILITIES
 ----------------------------------------------------------
 local function clearFog()
 	for _, obj in ipairs(Lighting:GetChildren()) do
-		if obj:IsA("Atmosphere") then
-			obj:Destroy()
-		end
+		if obj:IsA("Atmosphere") then obj:Destroy() end
 	end
 	pcall(function()
 		Lighting.FogEnd = 100000
@@ -59,9 +184,7 @@ end
 local function uncursed()
 	for _, obj in ipairs(Lighting:GetChildren()) do
 		if obj:IsA("ColorCorrectionEffect") then
-			pcall(function()
-				obj.Saturation = 0
-			end)
+			pcall(function() obj.Saturation = 0 end)
 		end
 	end
 	sendBlueChatMessage("[TACHYON] Uncursed: RGB Saturation set to 0! ✨")
@@ -84,7 +207,7 @@ local function teleportToSpawn()
 end
 
 ----------------------------------------------------------
--- INSTANT ANTI MAPTIDE-NAN SYSTEM (SECEPAT KILAT)
+-- INSTANT ANTI MAPTIDE-NAN SYSTEM
 ----------------------------------------------------------
 local antiMaptideEnabled = false
 
@@ -93,9 +216,7 @@ local function setAntiMaptide(state)
 	if antiMaptideEnabled then
 		local char = player.Character
 		local hrp = char and char:FindFirstChild("HumanoidRootPart")
-		if hrp then
-			hrp.CFrame = CFrame.new(-99, 193, -112)
-		end
+		if hrp then hrp.CFrame = CFrame.new(-99, 193, -112) end
 		sendBlueChatMessage("[TACHYON] Anti MaptideNan: INSTANT ON ⚡ (-99, 193, -112)")
 	else
 		sendBlueChatMessage("[TACHYON] Anti MaptideNan: OFF ❌")
@@ -105,9 +226,7 @@ end
 player.CharacterAdded:Connect(function(newChar)
 	if antiMaptideEnabled then
 		local hrp = newChar:WaitForChild("HumanoidRootPart", 2)
-		if hrp and antiMaptideEnabled then
-			hrp.CFrame = CFrame.new(-99, 193, -112)
-		end
+		if hrp and antiMaptideEnabled then hrp.CFrame = CFrame.new(-99, 193, -112) end
 	end
 end)
 
@@ -124,7 +243,6 @@ local function triggerDropSequence()
 	
 	local char = player.Character
 	if not char then isDropping = false return end
-	
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	if not hum then isDropping = false return end
 
@@ -143,7 +261,6 @@ local function triggerDropSequence()
 		task.spawn(function()
 			for _, tool in ipairs(toolsToDrop) do
 				if not char or not char.Parent then break end
-				
 				if hum.Health <= 0 then
 					pcall(function() tool.Parent = workspace end)
 				else
@@ -166,54 +283,38 @@ end
 local function monitorHealth(char)
 	local hum = char:WaitForChild("Humanoid", 5)
 	if not hum then return end
-	
 	hum.HealthChanged:Connect(function(health)
-		if health <= 5 and health > 0 and disarmDeathEnabled then
-			triggerDropSequence()
-		end
+		if health <= 5 and health > 0 and disarmDeathEnabled then triggerDropSequence() end
 	end)
-	
-	hum.Died:Connect(function()
-		triggerDropSequence()
-	end)
+	hum.Died:Connect(function() triggerDropSequence() end)
 end
 
 player.CharacterAdded:Connect(function(newChar)
 	isDropping = false
 	monitorHealth(newChar)
-	
 	if disarmDeathEnabled then
 		task.spawn(function()
 			task.wait(2)
 			local recovered = 0
 			local hrp = newChar:WaitForChild("HumanoidRootPart", 5)
-			
 			if hrp then
 				for _, tool in ipairs(droppedItems) do
 					if tool and tool.Parent == workspace then
 						pcall(function()
-							if tool:FindFirstChild("Handle") then
-								tool.Handle.CFrame = hrp.CFrame
-							end
+							if tool:FindFirstChild("Handle") then tool.Handle.CFrame = hrp.CFrame end
 						end)
-						pcall(function()
-							tool.Parent = player.Backpack
-						end)
+						pcall(function() tool.Parent = player.Backpack end)
 						recovered = recovered + 1
 					end
 				end
 			end
 			droppedItems = {}
-			if recovered > 0 then
-				sendBlueChatMessage("[TACHYON] Recovered " .. recovered .. " items! 🎒")
-			end
+			if recovered > 0 then sendBlueChatMessage("[TACHYON] Recovered " .. recovered .. " items! 🎒") end
 		end)
 	end
 end)
 
-if player.Character then
-	monitorHealth(player.Character)
-end
+if player.Character then monitorHealth(player.Character) end
 
 ----------------------------------------------------------
 -- ANTI-DRAG SYSTEM
@@ -231,7 +332,6 @@ end
 local function StartAntiDrag()
 	StopAntiDrag()
 	local timer = 0
-
 	antiDragConnection = RunService.Heartbeat:Connect(function(dt)
 		if not antiDragEnabled then return end
 		timer += dt
@@ -240,24 +340,18 @@ local function StartAntiDrag()
 
 		local char = plr.Character
 		if not char then return end
-
 		local humanoid = char:FindFirstChildWhichIsA("Humanoid")
 		if not humanoid then return end
 
 		local dragger = char:FindFirstChild("Dragger")
 		if dragger then
-			pcall(function()
-				dragger.ResponseStyle = Enum.DragDetectorResponseStyle.Custom
-			end)
+			pcall(function() dragger.ResponseStyle = Enum.DragDetectorResponseStyle.Custom end)
 		end
 
 		if humanoid.PlatformStand or humanoid.Sit then
 			humanoid.PlatformStand = false
 			humanoid.Sit = false
-
-			pcall(function()
-				humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
-			end)
+			pcall(function() humanoid:ChangeState(Enum.HumanoidStateType.GettingUp) end)
 		end
 	end)
 end
@@ -265,29 +359,19 @@ end
 plr.CharacterAdded:Connect(function()
 	if antiDragEnabled then
 		task.wait(0.5)
-		if antiDragEnabled then
-			StartAntiDrag()
-		end
+		if antiDragEnabled then StartAntiDrag() end
 	end
 end)
 
 ----------------------------------------------------------
 -- OWNER & HELPER TAGS
 ----------------------------------------------------------
-local OWNER_USERNAMES = {
-	["Rad11zz6"] = true,
-	["rad11zz6"] = true
-}
-
-local HELPER_USERNAMES = {
-	["einsteingoos"] = true,
-	["phan11zz"] = true
-}
+local OWNER_USERNAMES = { ["Rad11zz6"] = true, ["rad11zz6"] = true }
+local HELPER_USERNAMES = { ["einsteingoos"] = true, ["phan11zz"] = true }
 
 local function attachOwnerTag(character)
 	local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
-	if not torso then return end
-	if torso:FindFirstChild("TachyonOwnerTag") then return end
+	if not torso or torso:FindFirstChild("TachyonOwnerTag") then return end
 
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "TachyonOwnerTag"
@@ -312,14 +396,12 @@ local function attachOwnerTag(character)
 		ColorSequenceKeypoint.new(0, Color3.fromRGB(170, 0, 255)),
 		ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 170, 255))
 	}
-	gradient.Rotation = 0
 	gradient.Parent = label
 end
 
 local function attachHelperTag(character)
 	local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
-	if not torso then return end
-	if torso:FindFirstChild("TachyonHelperTag") then return end
+	if not torso or torso:FindFirstChild("TachyonHelperTag") then return end
 
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "TachyonHelperTag"
@@ -347,7 +429,6 @@ RunService.Heartbeat:Connect(function()
 			if torso then
 				local lowerName = string.lower(p.Name)
 				local lowerDisplay = string.lower(p.DisplayName)
-
 				if OWNER_USERNAMES[p.Name] and not torso:FindFirstChild("TachyonOwnerTag") then
 					attachOwnerTag(p.Character)
 				elseif (HELPER_USERNAMES[lowerName] or HELPER_USERNAMES[lowerDisplay]) and not torso:FindFirstChild("TachyonHelperTag") then
@@ -365,12 +446,7 @@ local antiFlingEnabled = false
 local antiFlingConnection = nil
 
 local function toggleAntiFling(state)
-	if state == nil then
-		antiFlingEnabled = not antiFlingEnabled
-	else
-		antiFlingEnabled = state
-	end
-
+	antiFlingEnabled = state ~= nil and state or not antiFlingEnabled
 	if antiFlingEnabled then
 		if not antiFlingConnection then
 			antiFlingConnection = RunService.Stepped:Connect(function()
@@ -378,21 +454,17 @@ local function toggleAntiFling(state)
 				for _, otherPlayer in pairs(Players:GetPlayers()) do
 					if otherPlayer ~= player and otherPlayer.Character then
 						for _, part in pairs(otherPlayer.Character:GetDescendants()) do
-							if part:IsA("BasePart") then
-								part.CanCollide = false
-							end
+							if part:IsA("BasePart") then part.CanCollide = false end
 						end
 					end
 				end
 			end)
 		end
-		print("[TACHYON] Anti-Fling: ON ✅")
 	else
 		if antiFlingConnection then
 			antiFlingConnection:Disconnect()
 			antiFlingConnection = nil
 		end
-		print("[TACHYON] Anti-Fling: OFF ❌")
 	end
 end
 
@@ -483,13 +555,6 @@ local function antiVisual()
 	Lighting.Brightness = 2
 end
 
-local function rainbowSystemMsg(msg)
-	if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-		local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-		if ch then ch:DisplaySystemMessage("<font color='#FF00FF'><b>[SPY] "..msg.."</b></font>") end
-	end
-end
-
 local function gotoPlayer(name)
 	if not name or name == "" then return end
 	name = string.lower(name)
@@ -501,6 +566,94 @@ local function gotoPlayer(name)
 			return
 		end
 	end
+end
+
+----------------------------------------------------------
+-- PERFECT 3D FLY & LOOP SPEED VARIABLES
+----------------------------------------------------------
+local flying = false
+local flySpeed = 50
+local flyConnection = nil
+local loopSpeedActive = false
+local targetLoopSpeed = 16
+
+local function startFly()
+	if flying then return end
+	flying = true
+	local char = player.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not hrp or not hum then flying = false return end
+
+	hum.PlatformStand = true
+
+	local bv = Instance.new("BodyVelocity")
+	bv.Name = "TachyonFlyVelocity"
+	bv.Parent = hrp
+	bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+	bv.Velocity = Vector3.new(0, 0, 0)
+
+	local bg = Instance.new("BodyGyro")
+	bg.Name = "TachyonFlyGyro"
+	bg.Parent = hrp
+	bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+	bg.P = 9000
+	bg.CFrame = hrp.CFrame
+
+	flyConnection = RunService.RenderStepped:Connect(function()
+		if not flying or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+			if bv then bv:Destroy() end
+			if bg then bg:Destroy() end
+			if flyConnection then flyConnection:Disconnect() end
+			return
+		end
+		
+		local cam = workspace.CurrentCamera
+		bg.CFrame = cam.CFrame
+
+		local moveDir = Vector3.new(0, 0, 0)
+		local UserInputService = game:GetService("UserInputService")
+		local isKeyboardMoving = false
+		
+		if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir += cam.CFrame.LookVector isKeyboardMoving = true end
+		if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir -= cam.CFrame.LookVector isKeyboardMoving = true end
+		if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir -= cam.CFrame.RightVector isKeyboardMoving = true end
+		if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir += cam.CFrame.RightVector isKeyboardMoving = true end
+		
+		if not isKeyboardMoving and hum.MoveDirection.Magnitude > 0 then
+			local flatLook = Vector3.new(cam.CFrame.LookVector.X, 0, cam.CFrame.LookVector.Z)
+			if flatLook.Magnitude > 0.001 then
+				flatLook = flatLook.Unit
+				local flatRight = Vector3.new(cam.CFrame.RightVector.X, 0, cam.CFrame.RightVector.Z).Unit
+				local fwd = hum.MoveDirection:Dot(flatLook)
+				local rgt = hum.MoveDirection:Dot(flatRight)
+				moveDir = (cam.CFrame.LookVector * fwd) + (cam.CFrame.RightVector * rgt)
+			end
+		end
+
+		if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir += Vector3.new(0, 1, 0) end
+		if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir -= Vector3.new(0, 1, 0) end
+
+		if moveDir.Magnitude > 1 then moveDir = moveDir.Unit end
+		bv.Velocity = moveDir * flySpeed
+	end)
+	sendBlueChatMessage("[TACHYON] Perfect Fly Enabled ✈️")
+end
+
+local function stopFly()
+	flying = false
+	if flyConnection then flyConnection:Disconnect() end
+	local char = player.Character
+	if char then
+		local hrp = char:FindFirstChild("HumanoidRootPart")
+		local hum = char:FindFirstChildOfClass("Humanoid")
+		if hrp then
+			if hrp:FindFirstChild("TachyonFlyVelocity") then hrp.TachyonFlyVelocity:Destroy() end
+			if hrp:FindFirstChild("TachyonFlyGyro") then hrp.TachyonFlyGyro:Destroy() end
+		end
+		if hum then hum.PlatformStand = false end
+	end
+	sendBlueChatMessage("[TACHYON] Fly Disabled ❌")
 end
 
 ----------------------------------------------------------
@@ -527,7 +680,6 @@ local mainStroke = Instance.new("UIStroke", main)
 mainStroke.Color = Color3.fromRGB(45, 45, 60)
 mainStroke.Thickness = 1.5
 
--- Top Bar
 local topBar = Instance.new("Frame")
 topBar.Size = UDim2.new(1, 0, 0, 30)
 topBar.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
@@ -537,7 +689,7 @@ Instance.new("UICorner", topBar).CornerRadius = UDim.new(0, 10)
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -60, 1, 0)
 title.Position = UDim2.new(0, 12, 0, 0)
-title.Text = "TACHYON v1.3.5"
+title.Text = "TACHYON v1.3.6"
 title.TextColor3 = Color3.fromRGB(0, 255, 255)
 title.Font = Enum.Font.SourceSansBold
 title.TextSize = 14
@@ -576,7 +728,6 @@ openBtn.MouseButton1Click:Connect(function()
 	openBtn.Visible = false
 end)
 
--- Sidebar
 local sidebar = Instance.new("Frame")
 sidebar.Size = UDim2.new(0, 110, 1, -30)
 sidebar.Position = UDim2.new(0, 0, 0, 30)
@@ -592,7 +743,6 @@ sidePadding.PaddingTop = UDim.new(0, 6)
 sidePadding.PaddingLeft = UDim.new(0, 6)
 sidePadding.PaddingRight = UDim.new(0, 6)
 
--- Content Area
 local contentArea = Instance.new("Frame")
 contentArea.Size = UDim2.new(1, -110, 1, -30)
 contentArea.Position = UDim2.new(0, 110, 0, 30)
@@ -921,7 +1071,7 @@ styleButton(uncursedBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180)
 uncursedBtn.MouseButton1Click:Connect(function() uncursed() end)
 
 ----------------------------------------------------------
--- [4] TAB TCO
+-- [4] TAB TCO (ENLIGHTEN ALARM & 2S SPAM ALARM)
 ----------------------------------------------------------
 local msgBox = Instance.new("TextBox")
 msgBox.Size = UDim2.new(0, 320, 0, 32)
@@ -959,8 +1109,168 @@ sendChatBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
+local enlightenAlarmBtn = Instance.new("TextButton")
+enlightenAlarmBtn.Size = UDim2.new(0, 320, 0, 32)
+enlightenAlarmBtn.Text = "Enlighten Alarm: OFF"
+enlightenAlarmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+enlightenAlarmBtn.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+enlightenAlarmBtn.Font = Enum.Font.SourceSansBold
+enlightenAlarmBtn.TextSize = 13
+enlightenAlarmBtn.LayoutOrder = 3
+enlightenAlarmBtn.Parent = tcoTab
+
+Instance.new("UICorner", enlightenAlarmBtn).CornerRadius = UDim.new(0, 6)
+local alarmStroke = Instance.new("UIStroke", enlightenAlarmBtn)
+alarmStroke.Color = Color3.fromRGB(255, 50, 50)
+alarmStroke.Thickness = 1
+alarmStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+local enlightenAlarmEnabled = false
+local arkenstoneHolders = {}
+
+enlightenAlarmBtn.MouseButton1Click:Connect(function()
+	enlightenAlarmEnabled = not enlightenAlarmEnabled
+	if enlightenAlarmEnabled then
+		enlightenAlarmBtn.Text = "Enlighten Alarm: ON"
+		sendBlueChatMessage("[TACHYON] Enlighten Alarm Activated ✅")
+	else
+		enlightenAlarmBtn.Text = "Enlighten Alarm: OFF"
+		sendBlueChatMessage("[TACHYON] Enlighten Alarm Deactivated ❌")
+	end
+end)
+
+local spamAlarmBtn = Instance.new("TextButton")
+spamAlarmBtn.Size = UDim2.new(0, 320, 0, 32)
+spamAlarmBtn.Text = "Spam Alarm: OFF"
+spamAlarmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+spamAlarmBtn.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+spamAlarmBtn.Font = Enum.Font.SourceSansBold
+spamAlarmBtn.TextSize = 13
+spamAlarmBtn.LayoutOrder = 4
+spamAlarmBtn.Parent = tcoTab
+
+Instance.new("UICorner", spamAlarmBtn).CornerRadius = UDim.new(0, 6)
+local spamStroke = Instance.new("UIStroke", spamAlarmBtn)
+spamStroke.Color = Color3.fromRGB(255, 50, 50)
+spamStroke.Thickness = 1
+spamStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+local spamAlarmEnabled = false
+spamAlarmBtn.MouseButton1Click:Connect(function()
+	spamAlarmEnabled = not spamAlarmEnabled
+	if spamAlarmEnabled then
+		spamAlarmBtn.Text = "Spam Alarm: ON"
+		sendBlueChatMessage("[TACHYON] Spam Alarm Activated ✅")
+	else
+		spamAlarmBtn.Text = "Spam Alarm: OFF"
+		sendBlueChatMessage("[TACHYON] Spam Alarm Deactivated ❌")
+	end
+end)
+
+local tcoInfoLabel = Instance.new("TextLabel")
+tcoInfoLabel.Size = UDim2.new(0, 320, 0, 24)
+tcoInfoLabel.Text = "👉 red = alarm 🚨"
+tcoInfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+tcoInfoLabel.BackgroundTransparency = 1
+tcoInfoLabel.Font = Enum.Font.SourceSansBold
+tcoInfoLabel.TextSize = 13
+tcoInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
+tcoInfoLabel.LayoutOrder = 5
+tcoInfoLabel.Parent = tcoTab
+
+task.spawn(function()
+	while true do
+		task.wait(0.5)
+		if enlightenAlarmEnabled then
+			for _, p in ipairs(Players:GetPlayers()) do
+				local hasIt = false
+				if p and p.Character then
+					for _, item in ipairs(p.Character:GetChildren()) do
+						if item:IsA("Tool") and item.Name == "The Arkenstone" then
+							hasIt = true
+							break
+						end
+					end
+				end
+				if not hasIt and p:FindFirstChild("Backpack") then
+					for _, item in ipairs(p.Backpack:GetChildren()) do
+						if item:IsA("Tool") and item.Name == "The Arkenstone" then
+							hasIt = true
+							break
+						end
+					end
+				end
+
+				if hasIt and not arkenstoneHolders[p] then
+					arkenstoneHolders[p] = true
+					local msg = p.Name .. " has a enlighten 🚨🚨"
+					if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+						local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+						if ch then ch:SendAsync(msg) end
+					else
+						local chatEvent = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
+						if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+							chatEvent.SayMessageRequest:FireServer(msg, "All")
+						end
+					end
+					sendBlueChatMessage("[TACHYON] " .. msg)
+				elseif not hasIt and arkenstoneHolders[p] then
+					arkenstoneHolders[p] = nil
+				end
+			end
+		end
+	end
+end)
+
+local playerBrickTimes = {}
+local lastSpamAlertTime = {}
+
+task.spawn(function()
+	local function monitorPlayerFolder(folder)
+		folder.ChildAdded:Connect(function(child)
+			if spamAlarmEnabled and child.Name == "Brick" then
+				local pName = folder.Name
+				local currentTime = tick()
+				if not playerBrickTimes[pName] then playerBrickTimes[pName] = {} end
+				table.insert(playerBrickTimes[pName], currentTime)
+				
+				local validTimes = {}
+				for _, t in ipairs(playerBrickTimes[pName]) do
+					if currentTime - t <= 2 then table.insert(validTimes, t) end
+				end
+				playerBrickTimes[pName] = validTimes
+				
+				if #validTimes >= 10 then
+					if not lastSpamAlertTime[pName] or (currentTime - lastSpamAlertTime[pName] > 3) then
+						lastSpamAlertTime[pName] = currentTime
+						local msg = "warning " .. pName .. " is building too fast 🚨🚨"
+						if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+							local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+							if ch then ch:SendAsync(msg) end
+						else
+							local chatEvent = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
+							if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+								chatEvent.SayMessageRequest:FireServer(msg, "All")
+							end
+						end
+						sendBlueChatMessage("[TACHYON] " .. msg)
+					end
+				end
+			end
+		end)
+	end
+
+	local bricksFolder = workspace:WaitForChild("Bricks", 10)
+	if bricksFolder then
+		for _, pFolder in ipairs(bricksFolder:GetChildren()) do monitorPlayerFolder(pFolder) end
+		bricksFolder.ChildAdded:Connect(function(pFolder)
+			if pFolder:IsA("Folder") or pFolder:IsA("Model") then monitorPlayerFolder(pFolder) end
+		end)
+	end
+end)
+
 ----------------------------------------------------------
--- [5] TAB TROLL (DELCUBES MENGGUNAKAN REMOTE EVENT 'Event')
+-- [5] TAB TROLL (DELCUBES & FLING)
 ----------------------------------------------------------
 local flingBtn = Instance.new("TextButton")
 flingBtn.Size = UDim2.new(0, 220, 0, 32)
@@ -1003,7 +1313,6 @@ flingBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Tombol DelCubes menggunakan RemoteEvent 'Event' asli milik game
 local delCubesBtn = Instance.new("TextButton")
 delCubesBtn.Size = UDim2.new(0, 220, 0, 32)
 delCubesBtn.Text = "DelCubes"
@@ -1018,8 +1327,6 @@ delCubesBtn.MouseButton1Click:Connect(function()
 	local char = player.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	local backpack = player:FindFirstChild("Backpack")
-	
-	-- Equip tool Delete jika ada
 	local deleteTool = (backpack and backpack:FindFirstChild("Delete")) or (char and char:FindFirstChild("Delete"))
 	if deleteTool and hum then
 		pcall(function() hum:EquipTool(deleteTool) end)
@@ -1029,33 +1336,15 @@ delCubesBtn.MouseButton1Click:Connect(function()
 	
 	local remoteEvent = player:FindFirstChild("Event")
 	local bricksFolder = workspace:FindFirstChild("Bricks")
-	
 	if bricksFolder and remoteEvent then
 		local count = 0
 		for _, playerFolder in ipairs(bricksFolder:GetChildren()) do
-			-- Jangan hapus folder milik player sendiri jika ingin aman, atau hapus semua folder player lain
 			if playerFolder.Name ~= player.Name then
 				for _, brick in ipairs(playerFolder:GetChildren()) do
 					if brick:IsA("BasePart") then
 						pcall(function()
-							-- Kirim koordinat posisi brick ke server lewat RemoteEvent 'Event' untuk menghapusnya secara server-side
-							local args = {
-								[1] = brick,
-								[2] = Enum.NormalId.Top,
-								[3] = brick.Position,
-								[4] = "delete" -- Mengubah parameter aksi menjadi delete (atau mencoba mengirim referensi brick)
-							}
-							remoteEvent:FireServer(unpack(args))
-							
-							-- Cadangan alternatif jika server membaca posisi
-							local argsPos = {
-								[1] = brick,
-								[2] = Enum.NormalId.Top,
-								[3] = brick.Position,
-								[4] = "normal"
-							}
-							remoteEvent:FireServer(unpack(argsPos))
-							
+							remoteEvent:FireServer(brick, Enum.NormalId.Top, brick.Position, "delete")
+							remoteEvent:FireServer(brick, Enum.NormalId.Top, brick.Position, "normal")
 							count = count + 1
 						end)
 					end
@@ -1083,7 +1372,6 @@ styleButton(antiDragBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
 
 antiDragBtn.MouseButton1Click:Connect(function()
 	antiDragEnabled = not antiDragEnabled
-
 	if antiDragEnabled then
 		StartAntiDrag()
 		antiDragBtn.Text = "Anti Drag: ON"
@@ -1242,18 +1530,33 @@ player.Chatted:Connect(function(msg)
 		setAntiMaptide(false)
 		antiMaptideBtn.Text = "Anti MaptideNan: OFF"
 		styleButton(antiMaptideBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
-	elseif cmd == ":spychat" then
-		rainbowSystemMsg(table.concat(args, " ", 2))
+	elseif cmd == ":enlightenalarm" then
+		enlightenAlarmEnabled = true
+		enlightenAlarmBtn.Text = "Enlighten Alarm: ON"
+		sendBlueChatMessage("[TACHYON] Enlighten Alarm Activated ✅")
+	elseif cmd == ":unenlightenalarm" then
+		enlightenAlarmEnabled = false
+		enlightenAlarmBtn.Text = "Enlighten Alarm: OFF"
+		sendBlueChatMessage("[TACHYON] Enlighten Alarm Deactivated ❌")
+	elseif cmd == ":spamalarm" then
+		spamAlarmEnabled = true
+		spamAlarmBtn.Text = "Spam Alarm: ON"
+		sendBlueChatMessage("[TACHYON] Spam Alarm Activated ✅")
+	elseif cmd == ":unspamalarm" then
+		spamAlarmEnabled = false
+		spamAlarmBtn.Text = "Spam Alarm: OFF"
+		styleButton(spamAlarmBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+		sendBlueChatMessage("[TACHYON] Spam Alarm Deactivated ❌")
 	elseif cmd == ":disarmdeath" then
-        disarmDeathEnabled = true
-        disarmDeathBtn.Text = "Disarm Death: ON"
-        styleButton(disarmDeathBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60))
-        sendBlueChatMessage("[TACHYON] Disarm Death Activated ✅")
-    elseif cmd == ":undisarmdeath" then
-        disarmDeathEnabled = false
-        disarmDeathBtn.Text = "Disarm Death: OFF"
-        styleButton(disarmDeathBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
-        sendBlueChatMessage("[TACHYON] Disarm Death Deactivated ❌")
+		disarmDeathEnabled = true
+		disarmDeathBtn.Text = "Disarm Death: ON"
+		styleButton(disarmDeathBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60))
+		sendBlueChatMessage("[TACHYON] Disarm Death Activated ✅")
+	elseif cmd == ":undisarmdeath" then
+		disarmDeathEnabled = false
+		disarmDeathBtn.Text = "Disarm Death: OFF"
+		styleButton(disarmDeathBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+		sendBlueChatMessage("[TACHYON] Disarm Death Deactivated ❌")
 	elseif cmd == ":delcubes" then
 		local char = player.Character
 		local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -1270,13 +1573,7 @@ player.Chatted:Connect(function(msg)
 					for _, brick in ipairs(playerFolder:GetChildren()) do
 						if brick:IsA("BasePart") then
 							pcall(function()
-								local args = {
-									[1] = brick,
-									[2] = Enum.NormalId.Top,
-									[3] = brick.Position,
-									[4] = "delete"
-								}
-								remoteEvent:FireServer(unpack(args))
+								remoteEvent:FireServer(brick, Enum.NormalId.Top, brick.Position, "delete")
 							end)
 						end
 					end
@@ -1284,7 +1581,37 @@ player.Chatted:Connect(function(msg)
 			end
 		end
 		sendBlueChatMessage("[TACHYON] DelCubes executed via chat! 🗑️")
+	elseif cmd == ":reset" then
+		local char = player.Character
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
+		if hum then
+			hum.Health = 0
+			sendBlueChatMessage("[TACHYON] Character Reset! 💀")
+		end
+	elseif cmd == ":fly" then
+		if flying then stopFly() else startFly() end
+	elseif cmd == ":loopspeed" then
+		local val = tonumber(args[2])
+		if val then
+			targetLoopSpeed = val
+			loopSpeedActive = true
+			sendBlueChatMessage("[TACHYON] LoopSpeed set to " .. val .. " ⚡")
+			task.spawn(function()
+				while loopSpeedActive do
+					local char = player.Character
+					local hum = char and char:FindFirstChildOfClass("Humanoid")
+					if hum then hum.WalkSpeed = targetLoopSpeed end
+					task.wait(0.2)
+				end
+			end)
+		else
+			loopSpeedActive = false
+			sendBlueChatMessage("[TACHYON] LoopSpeed Deactivated ❌")
+		end
+	elseif cmd == ":totalplayer" or cmd == ":totalplayers" then
+		local count = #Players:GetPlayers()
+		sendBlueChatMessage("[TACHYON] Total Players in Server: " .. count .. " 👥")
 	end
 end)
 
-sendBlueChatMessage("successfully loading tachyon ware v1.3.5 👍👍")
+sendBlueChatMessage("successfully loading tachyon ware v1.3.6 👍👍")
