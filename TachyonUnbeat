@@ -1,5 +1,5 @@
---// TACHYON v1.5.13 | LOWERED & 2X BIGGER OPEN BUTTON
---// Features: Scaled up Open button (2x size), lowered down slightly, Toggle +/- Minimize, Close (X) Button
+--// TACHYON v1.5.21 | AUTO WELCOME NEW PLAYERS ADDED
+--// Features: Automatically greets newly joined players when Auto Bot Chat is ON
 
 local player = game.Players.LocalPlayer
 local plr = player
@@ -681,14 +681,14 @@ topBarOpenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 topBarOpenGui.Parent = CoreGui
 
 local openBtn = Instance.new("TextButton")
-openBtn.Size = UDim2.new(0, 104, 0, 60)     -- Ukuran 2x lipat dari sebelumnya (52x30 -> 104x60)
-openBtn.Position = UDim2.new(0, 335, 0, 6)    -- Diturunkan dikit ke Y = 6 dari atas
+openBtn.Size = UDim2.new(0, 104, 0, 60)
+openBtn.Position = UDim2.new(0, 335, 0, 6)
 openBtn.Text = "Open"
 openBtn.BackgroundColor3 = Color3.fromRGB(30, 140, 255)
 openBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 openBtn.Font = Enum.Font.SourceSansBold
-openBtn.TextSize = 26                      -- Ukuran teks diperbesar 2x lipat
-openBtn.Visible = false                    -- JANGAN DIMUNCULIN DULU SAAT PERTAMA LOAD
+openBtn.TextSize = 26
+openBtn.Visible = false
 openBtn.Parent = topBarOpenGui
 styleButton(openBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180))
 
@@ -736,7 +736,7 @@ closeBtn.Parent = topBar
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -90, 1, 0)
 title.Position = UDim2.new(0, 36, 0, 0)
-title.Text = "TACHYON v1.5.13"
+title.Text = "TACHYON v1.5.21"
 title.TextColor3 = Color3.fromRGB(0, 255, 255)
 title.Font = Enum.Font.SourceSansBold
 title.TextSize = 14
@@ -781,13 +781,11 @@ contentArea.Parent = main
 ----------------------------------------------------------
 local isMinimized = false
 
--- Tombol X: Menghilangkan seluruh menu utama dan memunculkan tombol Open di sebelah Shop
 closeBtn.MouseButton1Click:Connect(function()
 	main.Visible = false
 	openBtn.Visible = true
 end)
 
--- Tombol Open di sebelah Shop: Memunculkan kembali menu utama
 openBtn.MouseButton1Click:Connect(function()
 	openBtn.Visible = false
 	main.Visible = true
@@ -800,10 +798,8 @@ openBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Tombol Minimize / Maximize (- / +)
 minimizeBtn.MouseButton1Click:Connect(function()
 	if not isMinimized then
-		-- Menjadi Minim (- jadi +)
 		isMinimized = true
 		sidebar.Visible = false
 		contentArea.Visible = false
@@ -812,7 +808,6 @@ minimizeBtn.MouseButton1Click:Connect(function()
 		local tweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 		TweenService:Create(main, tweenInfo, {Size = UDim2.new(0, 480, 0, 30)}):Play()
 	else
-		-- Membesar Kembali (+ jadi -)
 		isMinimized = false
 		minimizeBtn.Text = "-"
 		
@@ -1157,35 +1152,9 @@ uncursedBtn.MouseButton1Click:Connect(function() uncursed() end)
 ----------------------------------------------------------
 -- [4] TAB TCO (DENGAN ALARM AKTIF)
 ----------------------------------------------------------
-local msgBox = Instance.new("TextBox", tcoTab)
-msgBox.Size = UDim2.new(0, 320, 0, 32)
-msgBox.Position = UDim2.new(0, 12, 0, 12)
-msgBox.PlaceholderText = "Tulis Pesan Assist..."
-msgBox.Text = "Hello its me bot!!, im your assistant i will help you everytime!! 🤝🤝"
-msgBox.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
-msgBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-msgBox.Font = Enum.Font.SourceSans
-msgBox.TextSize = 13
-Instance.new("UICorner", msgBox).CornerRadius = UDim.new(0, 6)
-
-local sendChatBtn = Instance.new("TextButton", tcoTab)
-sendChatBtn.Size = UDim2.new(0, 320, 0, 32)
-sendChatBtn.Position = UDim2.new(0, 12, 0, 52)
-sendChatBtn.Text = "Send Chat"
-sendChatBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-sendChatBtn.Font = Enum.Font.SourceSansBold
-sendChatBtn.TextSize = 14
-styleButton(sendChatBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60))
-
-sendChatBtn.MouseButton1Click:Connect(function()
-	if msgBox.Text ~= "" then
-		executePublicChat(msgBox.Text)
-	end
-end)
-
 local enlightenAlarmBtn = Instance.new("TextButton", tcoTab)
 enlightenAlarmBtn.Size = UDim2.new(0, 320, 0, 32)
-enlightenAlarmBtn.Position = UDim2.new(0, 12, 0, 92)
+enlightenAlarmBtn.Position = UDim2.new(0, 12, 0, 12)
 enlightenAlarmBtn.Text = "Enlighten Alarm: OFF"
 enlightenAlarmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 enlightenAlarmBtn.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
@@ -1244,7 +1213,7 @@ end)
 
 local spamAlarmBtn = Instance.new("TextButton", tcoTab)
 spamAlarmBtn.Size = UDim2.new(0, 320, 0, 32)
-spamAlarmBtn.Position = UDim2.new(0, 12, 0, 132)
+spamAlarmBtn.Position = UDim2.new(0, 12, 0, 52)
 spamAlarmBtn.Text = "Spam Alarm: OFF"
 spamAlarmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 spamAlarmBtn.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
@@ -1321,7 +1290,7 @@ end
 
 local tcoInfoLabel = Instance.new("TextLabel", tcoTab)
 tcoInfoLabel.Size = UDim2.new(0, 320, 0, 24)
-tcoInfoLabel.Position = UDim2.new(0, 12, 0, 172)
+tcoInfoLabel.Position = UDim2.new(0, 12, 0, 92)
 tcoInfoLabel.Text = "👉 green = active | red = alarm 🚨"
 tcoInfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 tcoInfoLabel.BackgroundTransparency = 1
@@ -1329,6 +1298,7 @@ tcoInfoLabel.Font = Enum.Font.SourceSansBold
 tcoInfoLabel.TextSize = 13
 tcoInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
 
+-- TOMBOL MUSIC DI TCO (POJOK KANAN BAWAH)
 local openMusicModalBtn = Instance.new("TextButton", tcoTab)
 openMusicModalBtn.Size = UDim2.new(0, 85, 0, 28)
 openMusicModalBtn.Position = UDim2.new(1, -95, 1, -38)
@@ -1361,14 +1331,25 @@ modalTitle.TextXAlignment = Enum.TextXAlignment.Left
 modalTitle.ZIndex = 51
 
 local backMusicBtn = Instance.new("TextButton", musicModal)
-backMusicBtn.Size = UDim2.new(0, 60, 0, 26)
-backMusicBtn.Position = UDim2.new(1, -70, 0, 10)
+backMusicBtn.Size = UDim2.new(0, 60, 0, 28)
+backMusicBtn.Position = UDim2.new(1, -70, 1, -38)
 backMusicBtn.Text = "< Back"
 backMusicBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 backMusicBtn.Font = Enum.Font.SourceSansBold
 backMusicBtn.TextSize = 13
 backMusicBtn.ZIndex = 51
 styleButton(backMusicBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+
+-- TOMBOL BOT CHAT DI DALAM MUSIC MODAL (DI SEBELAH KIRI TOMBOL BACK)
+local openBotChatBtn = Instance.new("TextButton", musicModal)
+openBotChatBtn.Size = UDim2.new(0, 85, 0, 28)
+openBotChatBtn.Position = UDim2.new(1, -165, 1, -38)
+openBotChatBtn.Text = "💬 Bot Chat"
+openBotChatBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+openBotChatBtn.Font = Enum.Font.SourceSansBold
+openBotChatBtn.TextSize = 12
+openBotChatBtn.ZIndex = 51
+styleButton(openBotChatBtn, Color3.fromRGB(180, 0, 180), Color3.fromRGB(100, 0, 100))
 
 local infoMusicLabel = Instance.new("TextLabel", musicModal)
 infoMusicLabel.Size = UDim2.new(1, -30, 0, 20)
@@ -1455,6 +1436,167 @@ end)
 
 backMusicBtn.MouseButton1Click:Connect(function()
 	musicModal.Visible = false
+end)
+
+----------------------------------------------------------
+-- FULL-SIZE RIGHT CONTENT BOT CHAT MODAL
+----------------------------------------------------------
+local botChatModal = Instance.new("Frame", main)
+botChatModal.Name = "TachyonBotChatModal"
+botChatModal.Size = UDim2.new(1, -110, 1, -30)
+botChatModal.Position = UDim2.new(0, 110, 0, 30)
+botChatModal.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
+botChatModal.Visible = false
+botChatModal.ZIndex = 60
+
+local botChatModalTitle = Instance.new("TextLabel", botChatModal)
+botChatModalTitle.Size = UDim2.new(1, -80, 0, 30)
+botChatModalTitle.Position = UDim2.new(0, 15, 0, 8)
+botChatModalTitle.Text = "💬 Bot Chat Panel Content"
+botChatModalTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+botChatModalTitle.Font = Enum.Font.SourceSansBold
+botChatModalTitle.TextSize = 15
+botChatModalTitle.BackgroundTransparency = 1
+botChatModalTitle.TextXAlignment = Enum.TextXAlignment.Left
+botChatModalTitle.ZIndex = 61
+
+local backBotChatBtn = Instance.new("TextButton", botChatModal)
+backBotChatBtn.Size = UDim2.new(0, 60, 0, 28)
+backBotChatBtn.Position = UDim2.new(1, -70, 1, -38)
+backBotChatBtn.Text = "< Back"
+backBotChatBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+backBotChatBtn.Font = Enum.Font.SourceSansBold
+backBotChatBtn.TextSize = 13
+backBotChatBtn.ZIndex = 61
+styleButton(backBotChatBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+
+-- Kotak Tulis Pesan (TextBox) Bot Chat
+local msgBox = Instance.new("TextBox", botChatModal)
+msgBox.Size = UDim2.new(0, 320, 0, 32)
+msgBox.Position = UDim2.new(0, 15, 0, 42)
+msgBox.PlaceholderText = "Tulis Pesan Bot Chat..."
+msgBox.Text = "Hello its me bot!!, im your assistant i will help you everytime!! 🤝🤝"
+msgBox.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+msgBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+msgBox.Font = Enum.Font.SourceSans
+msgBox.TextSize = 13
+msgBox.ZIndex = 61
+Instance.new("UICorner", msgBox).CornerRadius = UDim.new(0, 6)
+
+-- Tombol Send Chat Pertama ("Hello its me bot!!...")
+local sendChatBtn = Instance.new("TextButton", botChatModal)
+sendChatBtn.Size = UDim2.new(0, 320, 0, 28)
+sendChatBtn.Position = UDim2.new(0, 15, 0, 78)
+sendChatBtn.Text = "Send Chat"
+sendChatBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+sendChatBtn.Font = Enum.Font.SourceSansBold
+sendChatBtn.TextSize = 13
+sendChatBtn.ZIndex = 61
+styleButton(sendChatBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60))
+
+sendChatBtn.MouseButton1Click:Connect(function()
+	if msgBox.Text ~= "" then
+		executePublicChat(msgBox.Text)
+	end
+end)
+
+-- Tombol Chat Kedua ("ohh hello!!, how are you buddy?? 😃😃")
+local sendHelloBtn = Instance.new("TextButton", botChatModal)
+sendHelloBtn.Size = UDim2.new(0, 320, 0, 28)
+sendHelloBtn.Position = UDim2.new(0, 15, 0, 110)
+sendHelloBtn.Text = "ohh hello!!, how are you buddy?? 😃😃"
+sendHelloBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+sendHelloBtn.Font = Enum.Font.SourceSansBold
+sendHelloBtn.TextSize = 12
+sendMusicModalBtn = nil -- fix syntax reference if needed
+sendHelloBtn.ZIndex = 61
+styleButton(sendHelloBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180))
+
+sendHelloBtn.MouseButton1Click:Connect(function()
+	executePublicChat("ohh hello!!, how are you buddy?? 😃😃")
+end)
+
+-- Tombol Auto Bot Chat Toggle (Longkap 1 baris di bawahnya, posisi Y = 148)
+local autoBotChatBtn = Instance.new("TextButton", botChatModal)
+autoBotChatBtn.Size = UDim2.new(0, 320, 0, 30)
+autoBotChatBtn.Position = UDim2.new(0, 15, 0, 148)
+autoBotChatBtn.Text = "Auto Bot Chat: OFF"
+autoBotChatBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+autoBotChatBtn.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+autoBotChatBtn.Font = Enum.Font.SourceSansBold
+autoBotChatBtn.TextSize = 13
+autoBotChatBtn.ZIndex = 61
+
+Instance.new("UICorner", autoBotChatBtn).CornerRadius = UDim.new(0, 6)
+local autoBotStroke = Instance.new("UIStroke", autoBotChatBtn)
+autoBotStroke.Color = Color3.fromRGB(255, 50, 50)
+autoBotStroke.Thickness = 1.5
+autoBotStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+local autoBotChatEnabled = false
+
+autoBotChatBtn.MouseButton1Click:Connect(function()
+	autoBotChatEnabled = not autoBotChatEnabled
+	if autoBotChatEnabled then
+		autoBotChatBtn.Text = "Auto Bot Chat: ON"
+		autoBotStroke.Color = Color3.fromRGB(0, 255, 100)
+		sendBlueChatMessage("[TACHYON] Auto Bot Chat Activated ✅ (Proximity greetings & Auto-welcome ON)")
+	else
+		autoBotChatBtn.Text = "Auto Bot Chat: OFF"
+		autoBotStroke.Color = Color3.fromRGB(255, 50, 50)
+		sendBlueChatMessage("[TACHYON] Auto Bot Chat Deactivated ❌")
+	end
+end)
+
+-- Listener chat: Mendeteksi sapaan "hi" atau "hello" dari pemain terdekat (radius 15 studs)
+local function setupChatListener(p)
+	p.Chatted:Connect(function(msg)
+		if autoBotChatEnabled and p ~= player then
+			local myChar = player.Character
+			local otherChar = p.Character
+			if myChar and otherChar then
+				local myHrp = myChar:FindFirstChild("HumanoidRootPart")
+				local otherHrp = otherChar:FindFirstChild("HumanoidRootPart")
+				if myHrp and otherHrp then
+					local distance = (myHrp.Position - otherHrp.Position).Magnitude
+					if distance <= 15 then
+						local lowerMsg = string.lower(msg)
+						if string.find(lowerMsg, "hi") or string.find(lowerMsg, "hello") or string.find(lowerMsg, "halo") or string.find(lowerMsg, "hey") then
+							task.wait(0.4)
+							executePublicChat("ohh hello!!, how are you buddy?? 😃😃")
+						end
+					end
+				end
+			end
+		end
+	end)
+end
+
+-- Listener pemain baru join server
+local function setupPlayerJoin(p)
+	if p ~= player then
+		task.wait(2) -- Jeda sebentar setelah pemain join agar siap
+		if autoBotChatEnabled then
+			executePublicChat("hello " .. p.Name .. " welcome to the server 👋🫵")
+		end
+	end
+end
+
+for _, p in ipairs(Players:GetPlayers()) do
+	setupChatListener(p)
+end
+
+Players.PlayerAdded:Connect(function(newP)
+	setupChatListener(newP)
+	setupPlayerJoin(newP)
+end)
+
+openBotChatBtn.MouseButton1Click:Connect(function()
+	botChatModal.Visible = true
+end)
+
+backBotChatBtn.MouseButton1Click:Connect(function()
+	botChatModal.Visible = false
 end)
 
 ----------------------------------------------------------
@@ -1805,4 +1947,4 @@ player.Chatted:Connect(function(msg)
 	end
 end)
 
-sendBlueChatMessage("successfully loading tachyon ware v1.5.13 👍👍")
+sendBlueChatMessage("successfully loading tachyon ware v1.5.21 👍👍")
