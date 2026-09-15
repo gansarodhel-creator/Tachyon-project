@@ -1,5 +1,5 @@
---// TACHYON v1.5.21 | AUTO WELCOME NEW PLAYERS ADDED
---// Features: Automatically greets newly joined players when Auto Bot Chat is ON
+--// TACHYON v1.5.23 | INTRO SOUND UPDATED (ID: 8172662129 + CLICK SOUND + SHOOTING STARS)
+--// Features: Fullscreen Intro, Shooting Stars, Tachyon UI, Chat Bot, Prefix Echo (;), Click Audio
 
 local player = game.Players.LocalPlayer
 local plr = player
@@ -24,7 +24,23 @@ if CoreGui:FindFirstChild("TachyonIntro") then CoreGui.TachyonIntro:Destroy() en
 if CoreGui:FindFirstChild("TachyonTopBarOpen") then CoreGui.TachyonTopBarOpen:Destroy() end
 
 ----------------------------------------------------------
--- MASSIVE FULLSCREEN INTRO (IGNORE GUI INSET FIX)
+-- CLICK SOUND HELPER SYSTEM
+----------------------------------------------------------
+local function addClickSound(btn)
+	btn.MouseButton1Click:Connect(function()
+		local clickSound = Instance.new("Sound")
+		clickSound.SoundId = "rbxassetid://7043920820"
+		clickSound.Volume = 0.6
+		clickSound.Parent = SoundService
+		clickSound:Play()
+		clickSound.Ended:Connect(function()
+			clickSound:Destroy()
+		end)
+	end)
+end
+
+----------------------------------------------------------
+-- MASSIVE FULLSCREEN INTRO (WITH SHOOTING STARS)
 ----------------------------------------------------------
 local introGui = Instance.new("ScreenGui")
 introGui.Name = "TachyonIntro"
@@ -41,7 +57,7 @@ bg.BorderSizePixel = 0
 bg.ZIndex = 10
 
 local introSound = Instance.new("Sound")
-introSound.SoundId = "rbxassetid://128679057023142"
+introSound.SoundId = "rbxassetid://8172662129"
 introSound.Volume = 10
 introSound.Parent = SoundService
 introSound:Play()
@@ -70,6 +86,50 @@ createOrb(UDim2.new(0.6, 0, 0.4, 0), UDim2.new(0, 700, 0, 700), Color3.fromRGB(1
 createOrb(UDim2.new(0.35, 0, -0.08, 0), UDim2.new(0, 160, 0, 160), Color3.fromRGB(0, 195, 255), Color3.fromRGB(255, 230, 0))
 createOrb(UDim2.new(-0.05, 0, 0.65, 0), UDim2.new(0, 200, 0, 200), Color3.fromRGB(255, 0, 150), Color3.fromRGB(0, 100, 255))
 createOrb(UDim2.new(0.85, 0, -0.05, 0), UDim2.new(0, 140, 0, 140), Color3.fromRGB(255, 220, 0), Color3.fromRGB(255, 0, 0))
+
+--// EFEK BINTANG JATUH (SHOOTING STAR)
+local function createShootingStar()
+	if not bg or not bg.Parent then return end
+	
+	local star = Instance.new("Frame", bg)
+	star.Size = UDim2.new(0, math.random(80, 140), 0, 2)
+	star.BorderSizePixel = 0
+	star.ZIndex = 12
+	
+	local startX = math.random(0, 1200) / 1000
+	star.Position = UDim2.new(startX, 0, -0.1, 0)
+	
+	local corner = Instance.new("UICorner", star)
+	corner.CornerRadius = UDim.new(1, 0)
+	
+	local grad = Instance.new("UIGradient", star)
+	grad.Transparency = NumberSequence.new{
+		NumberSequenceKeypoint.new(0, 0),
+		NumberSequenceKeypoint.new(1, 1)
+	}
+	grad.Color = ColorSequence.new(Color3.fromRGB(0, 220, 255))
+	star.Rotation = math.random(35, 55)
+	
+	local targetX = startX - math.random(40, 70) / 100
+	local targetY = math.random(110, 140) / 100
+	local fallDuration = math.random(300, 600) / 1000
+	
+	TweenService:Create(star, TweenInfo.new(fallDuration, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+		Position = UDim2.new(targetX, 0, targetY, 0)
+	}):Play()
+	
+	task.delay(fallDuration, function()
+		if star then star:Destroy() end
+	end)
+end
+
+task.spawn(function()
+	local starStartTime = tick()
+	while tick() - starStartTime < 3.8 do
+		createShootingStar()
+		task.wait(math.random(10, 30) / 100)
+	end
+end)
 
 local centerBox = Instance.new("Frame", bg)
 centerBox.Size = UDim2.new(0, 700, 0, 200)
@@ -482,7 +542,7 @@ local function toggleAntiFling(state)
 end
 
 ----------------------------------------------------------
--- HELPER: STYLING BUTTON
+-- HELPER: STYLING BUTTON + CLICK SOUND
 ----------------------------------------------------------
 local function styleButton(btn, startColor, endColor)
 	btn.AutoButtonColor = true
@@ -506,6 +566,8 @@ local function styleButton(btn, startColor, endColor)
 	}
 	gradient.Rotation = 90
 	gradient.Parent = btn
+
+	addClickSound(btn)
 end
 
 ----------------------------------------------------------
@@ -583,95 +645,7 @@ local function gotoPlayer(name)
 end
 
 ----------------------------------------------------------
--- PERFECT 3D FLY & LOOP SPEED VARIABLES
-----------------------------------------------------------
-local flying = false
-local flySpeed = 50
-local flyConnection = nil
-local loopSpeedActive = false
-local targetLoopSpeed = 16
-
-local function startFly()
-	if flying then return end
-	flying = true
-	local char = player.Character
-	local hrp = char and char:FindFirstChild("HumanoidRootPart")
-	local hum = char and char:FindFirstChildOfClass("Humanoid")
-	if not hrp or not hum then flying = false return end
-
-	hum.PlatformStand = true
-
-	local bv = Instance.new("BodyVelocity")
-	bv.Name = "TachyonFlyVelocity"
-	bv.Parent = hrp
-	bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-	bv.Velocity = Vector3.new(0, 0, 0)
-
-	local bg = Instance.new("BodyGyro")
-	bg.Name = "TachyonFlyGyro"
-	bg.Parent = hrp
-	bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-	bg.P = 9000
-	bg.CFrame = hrp.CFrame
-
-	flyConnection = RunService.RenderStepped:Connect(function()
-		if not flying or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
-			if bv then bv:Destroy() end
-			if bg then bg:Destroy() end
-			if flyConnection then flyConnection:Disconnect() end
-			return
-		end
-		
-		local cam = workspace.CurrentCamera
-		bg.CFrame = cam.CFrame
-
-		local moveDir = Vector3.new(0, 0, 0)
-		local UserInputService = game:GetService("UserInputService")
-		local isKeyboardMoving = false
-		
-		if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir += cam.CFrame.LookVector isKeyboardMoving = true end
-		if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir -= cam.CFrame.LookVector isKeyboardMoving = true end
-		if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir -= cam.CFrame.RightVector isKeyboardMoving = true end
-		if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir += cam.CFrame.RightVector isKeyboardMoving = true end
-		
-		if not isKeyboardMoving and hum.MoveDirection.Magnitude > 0 then
-			local flatLook = Vector3.new(cam.CFrame.LookVector.X, 0, cam.CFrame.LookVector.Z)
-			if flatLook.Magnitude > 0.001 then
-				flatLook = flatLook.Unit
-				local flatRight = Vector3.new(cam.CFrame.RightVector.X, 0, cam.CFrame.RightVector.Z).Unit
-				local fwd = hum.MoveDirection:Dot(flatLook)
-				local rgt = hum.MoveDirection:Dot(flatRight)
-				moveDir = (cam.CFrame.LookVector * fwd) + (cam.CFrame.RightVector * rgt)
-			end
-		end
-
-		if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir += Vector3.new(0, 1, 0) end
-		if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir -= Vector3.new(0, 1, 0) end
-
-		if moveDir.Magnitude > 1 then moveDir = moveDir.Unit end
-		bv.Velocity = moveDir * flySpeed
-	end)
-	sendBlueChatMessage("[TACHYON] Perfect Fly Enabled ✈️")
-end
-
-local function stopFly()
-	flying = false
-	if flyConnection then flyConnection:Disconnect() end
-	local char = player.Character
-	if char then
-		local hrp = char:FindFirstChild("HumanoidRootPart")
-		local hum = char:FindFirstChildOfClass("Humanoid")
-		if hrp then
-			if hrp:FindFirstChild("TachyonFlyVelocity") then hrp.TachyonFlyVelocity:Destroy() end
-			if hrp:FindFirstChild("TachyonFlyGyro") then hrp.TachyonFlyGyro:Destroy() end
-		end
-		if hum then hum.PlatformStand = false end
-	end
-	sendBlueChatMessage("[TACHYON] Fly Disabled ❌")
-end
-
-----------------------------------------------------------
--- TOPBAR OPEN BUTTON (2X SIZE & LOWERED SLIGHTLY)
+-- TOPBAR OPEN BUTTON
 ----------------------------------------------------------
 local topBarOpenGui = Instance.new("ScreenGui")
 topBarOpenGui.Name = "TachyonTopBarOpen"
@@ -722,7 +696,6 @@ topBar.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
 topBar.Parent = main
 Instance.new("UICorner", topBar).CornerRadius = UDim.new(0, 10)
 
--- TOMBOL X DI SEBELAH KIRI TOPBAR
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 28, 0, 28)
 closeBtn.Position = UDim2.new(0, 4, 0, 1)
@@ -732,11 +705,12 @@ closeBtn.BackgroundTransparency = 1
 closeBtn.Font = Enum.Font.SourceSansBold
 closeBtn.TextSize = 16
 closeBtn.Parent = topBar
+addClickSound(closeBtn)
 
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -90, 1, 0)
 title.Position = UDim2.new(0, 36, 0, 0)
-title.Text = "TACHYON v1.5.21"
+title.Text = "TACHYON v1.5.23"
 title.TextColor3 = Color3.fromRGB(0, 255, 255)
 title.Font = Enum.Font.SourceSansBold
 title.TextSize = 14
@@ -744,7 +718,6 @@ title.BackgroundTransparency = 1
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = topBar
 
--- TOMBOL MINIMIZE / MAXIMIZE (- / +)
 local minimizeBtn = Instance.new("TextButton")
 minimizeBtn.Size = UDim2.new(0, 28, 0, 28)
 minimizeBtn.Position = UDim2.new(1, -28, 0, 0)
@@ -754,6 +727,7 @@ minimizeBtn.BackgroundTransparency = 1
 minimizeBtn.Font = Enum.Font.SourceSansBold
 minimizeBtn.TextSize = 18
 minimizeBtn.Parent = topBar
+addClickSound(minimizeBtn)
 
 local sidebar = Instance.new("Frame")
 sidebar.Size = UDim2.new(0, 110, 1, -30)
@@ -1061,7 +1035,7 @@ jumpLabel.TextSize = 14
 jumpLabel.Parent = settingsTab
 
 local jumpBox = Instance.new("TextBox")
-jumpBox.Size = UDim2.new(0, 100, 0, 55)
+jumpBox.Size = UDim2.new(0, 100, 0, 30)
 jumpBox.Position = UDim2.new(0, 90, 0, 55)
 jumpBox.PlaceholderText = "50"
 jumpBox.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
@@ -1150,7 +1124,7 @@ styleButton(uncursedBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180)
 uncursedBtn.MouseButton1Click:Connect(function() uncursed() end)
 
 ----------------------------------------------------------
--- [4] TAB TCO (DENGAN ALARM AKTIF)
+-- [4] TAB TCO
 ----------------------------------------------------------
 local enlightenAlarmBtn = Instance.new("TextButton", tcoTab)
 enlightenAlarmBtn.Size = UDim2.new(0, 320, 0, 32)
@@ -1166,6 +1140,7 @@ local alarmStroke = Instance.new("UIStroke", enlightenAlarmBtn)
 alarmStroke.Color = Color3.fromRGB(255, 50, 50)
 alarmStroke.Thickness = 1
 alarmStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+addClickSound(enlightenAlarmBtn)
 
 local enlightenAlarmEnabled = false
 local arkenstoneHolders = {}
@@ -1225,6 +1200,7 @@ local spamStroke = Instance.new("UIStroke", spamAlarmBtn)
 spamStroke.Color = Color3.fromRGB(255, 50, 50)
 spamStroke.Thickness = 1
 spamStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+addClickSound(spamAlarmBtn)
 
 local spamAlarmEnabled = false
 spamAlarmBtn.MouseButton1Click:Connect(function()
@@ -1298,7 +1274,6 @@ tcoInfoLabel.Font = Enum.Font.SourceSansBold
 tcoInfoLabel.TextSize = 13
 tcoInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- TOMBOL MUSIC DI TCO (POJOK KANAN BAWAH)
 local openMusicModalBtn = Instance.new("TextButton", tcoTab)
 openMusicModalBtn.Size = UDim2.new(0, 85, 0, 28)
 openMusicModalBtn.Position = UDim2.new(1, -95, 1, -38)
@@ -1309,7 +1284,7 @@ openMusicModalBtn.TextSize = 12
 styleButton(openMusicModalBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180))
 
 ----------------------------------------------------------
--- FULL-SIZE RIGHT CONTENT MUSIC MODAL
+-- MUSIC MODAL
 ----------------------------------------------------------
 local musicModal = Instance.new("Frame", main)
 musicModal.Name = "TachyonMusicModal"
@@ -1340,7 +1315,6 @@ backMusicBtn.TextSize = 13
 backMusicBtn.ZIndex = 51
 styleButton(backMusicBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
 
--- TOMBOL BOT CHAT DI DALAM MUSIC MODAL (DI SEBELAH KIRI TOMBOL BACK)
 local openBotChatBtn = Instance.new("TextButton", musicModal)
 openBotChatBtn.Size = UDim2.new(0, 85, 0, 28)
 openBotChatBtn.Position = UDim2.new(1, -165, 1, -38)
@@ -1362,7 +1336,6 @@ infoMusicLabel.TextSize = 13
 infoMusicLabel.TextXAlignment = Enum.TextXAlignment.Left
 infoMusicLabel.ZIndex = 51
 
--- TOMBOL SHADY GRAY
 local shadyGrayBtn = Instance.new("TextButton", musicModal)
 shadyGrayBtn.Size = UDim2.new(0, 200, 0, 28)
 shadyGrayBtn.Position = UDim2.new(0, 15, 0, 65)
@@ -1379,7 +1352,6 @@ shadyGrayBtn.MouseButton1Click:Connect(function()
 	sendBlueChatMessage("[TACHYON] Copied Shady Gray ID: " .. targetNumber .. " 📋")
 end)
 
--- TOMBOL JUDAS
 local judasBtn = Instance.new("TextButton", musicModal)
 judasBtn.Size = UDim2.new(0, 200, 0, 28)
 judasBtn.Position = UDim2.new(0, 15, 0, 98)
@@ -1396,7 +1368,6 @@ judasBtn.MouseButton1Click:Connect(function()
 	sendBlueChatMessage("[TACHYON] Copied Judas ID: " .. targetNumber .. " 📋")
 end)
 
--- TOMBOL RTHRO
 local rthroBtn = Instance.new("TextButton", musicModal)
 rthroBtn.Size = UDim2.new(0, 200, 0, 28)
 rthroBtn.Position = UDim2.new(0, 15, 0, 131)
@@ -1413,7 +1384,6 @@ rthroBtn.MouseButton1Click:Connect(function()
 	sendBlueChatMessage("[TACHYON] Copied Rthro ID: " .. targetNumber .. " 📋")
 end)
 
--- TOMBOL ADMIRING YOU
 local admiringYouBtn = Instance.new("TextButton", musicModal)
 admiringYouBtn.Size = UDim2.new(0, 200, 0, 28)
 admiringYouBtn.Position = UDim2.new(0, 15, 0, 164)
@@ -1439,7 +1409,7 @@ backMusicBtn.MouseButton1Click:Connect(function()
 end)
 
 ----------------------------------------------------------
--- FULL-SIZE RIGHT CONTENT BOT CHAT MODAL
+-- BOT CHAT MODAL
 ----------------------------------------------------------
 local botChatModal = Instance.new("Frame", main)
 botChatModal.Name = "TachyonBotChatModal"
@@ -1470,7 +1440,6 @@ backBotChatBtn.TextSize = 13
 backBotChatBtn.ZIndex = 61
 styleButton(backBotChatBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
 
--- Kotak Tulis Pesan (TextBox) Bot Chat
 local msgBox = Instance.new("TextBox", botChatModal)
 msgBox.Size = UDim2.new(0, 320, 0, 32)
 msgBox.Position = UDim2.new(0, 15, 0, 42)
@@ -1483,7 +1452,6 @@ msgBox.TextSize = 13
 msgBox.ZIndex = 61
 Instance.new("UICorner", msgBox).CornerRadius = UDim.new(0, 6)
 
--- Tombol Send Chat Pertama ("Hello its me bot!!...")
 local sendChatBtn = Instance.new("TextButton", botChatModal)
 sendChatBtn.Size = UDim2.new(0, 320, 0, 28)
 sendChatBtn.Position = UDim2.new(0, 15, 0, 78)
@@ -1500,7 +1468,6 @@ sendChatBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Tombol Chat Kedua ("ohh hello!!, how are you buddy?? 😃😃")
 local sendHelloBtn = Instance.new("TextButton", botChatModal)
 sendHelloBtn.Size = UDim2.new(0, 320, 0, 28)
 sendHelloBtn.Position = UDim2.new(0, 15, 0, 110)
@@ -1508,7 +1475,6 @@ sendHelloBtn.Text = "ohh hello!!, how are you buddy?? 😃😃"
 sendHelloBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 sendHelloBtn.Font = Enum.Font.SourceSansBold
 sendHelloBtn.TextSize = 12
-sendMusicModalBtn = nil -- fix syntax reference if needed
 sendHelloBtn.ZIndex = 61
 styleButton(sendHelloBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180))
 
@@ -1516,7 +1482,6 @@ sendHelloBtn.MouseButton1Click:Connect(function()
 	executePublicChat("ohh hello!!, how are you buddy?? 😃😃")
 end)
 
--- Tombol Auto Bot Chat Toggle (Longkap 1 baris di bawahnya, posisi Y = 148)
 local autoBotChatBtn = Instance.new("TextButton", botChatModal)
 autoBotChatBtn.Size = UDim2.new(0, 320, 0, 30)
 autoBotChatBtn.Position = UDim2.new(0, 15, 0, 148)
@@ -1532,6 +1497,7 @@ local autoBotStroke = Instance.new("UIStroke", autoBotChatBtn)
 autoBotStroke.Color = Color3.fromRGB(255, 50, 50)
 autoBotStroke.Thickness = 1.5
 autoBotStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+addClickSound(autoBotChatBtn)
 
 local autoBotChatEnabled = false
 
@@ -1540,7 +1506,7 @@ autoBotChatBtn.MouseButton1Click:Connect(function()
 	if autoBotChatEnabled then
 		autoBotChatBtn.Text = "Auto Bot Chat: ON"
 		autoBotStroke.Color = Color3.fromRGB(0, 255, 100)
-		sendBlueChatMessage("[TACHYON] Auto Bot Chat Activated ✅ (Proximity greetings & Auto-welcome ON)")
+		sendBlueChatMessage("[TACHYON] Auto Bot Chat Activated ✅ (Proximity & Welcome ON)")
 	else
 		autoBotChatBtn.Text = "Auto Bot Chat: OFF"
 		autoBotStroke.Color = Color3.fromRGB(255, 50, 50)
@@ -1548,7 +1514,6 @@ autoBotChatBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Listener chat: Mendeteksi sapaan "hi" atau "hello" dari pemain terdekat (radius 15 studs)
 local function setupChatListener(p)
 	p.Chatted:Connect(function(msg)
 		if autoBotChatEnabled and p ~= player then
@@ -1572,10 +1537,9 @@ local function setupChatListener(p)
 	end)
 end
 
--- Listener pemain baru join server
 local function setupPlayerJoin(p)
 	if p ~= player then
-		task.wait(2) -- Jeda sebentar setelah pemain join agar siap
+		task.wait(2)
 		if autoBotChatEnabled then
 			executePublicChat("hello " .. p.Name .. " welcome to the server 👋🫵")
 		end
@@ -1600,7 +1564,7 @@ backBotChatBtn.MouseButton1Click:Connect(function()
 end)
 
 ----------------------------------------------------------
--- [5] TAB TROLL (DELCUBES & FLING)
+-- [5] TAB TROLL
 ----------------------------------------------------------
 local flingBtn = Instance.new("TextButton")
 flingBtn.Size = UDim2.new(0, 220, 0, 32)
@@ -1915,12 +1879,8 @@ player.Chatted:Connect(function(msg)
 		end
 		sendBlueChatMessage("[TACHYON] DelCubes executed via chat! 🗑️")
 	elseif cmd == ":reset" then
-		local char = player.Character
-		local hum = char and char:FindFirstChildOfClass("Humanoid")
-		if hum then
-			hum.Health = 0
-			sendBlueChatMessage("[TACHYON] Character Reset! 💀")
-		end
+		loadstring([[game.Players.LocalPlayer.Character.Humanoid.Health = 0]])()
+		sendBlueChatMessage("[TACHYON] Character Reset! 💀")
 	elseif cmd == ":fly" then
 		if flying then stopFly() else startFly() end
 	elseif cmd == ":loopspeed" then
@@ -1947,4 +1907,4 @@ player.Chatted:Connect(function(msg)
 	end
 end)
 
-sendBlueChatMessage("successfully loading tachyon ware v1.5.21 👍👍")
+sendBlueChatMessage("successfully loading tachyon ware v1.5.23 👍👍")
