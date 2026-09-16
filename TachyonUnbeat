@@ -1,5 +1,5 @@
 --// TACHYON v1.5.23 | INTRO SOUND UPDATED (ID: 8172662129 + CLICK SOUND + SHOOTING STARS)
---// Features: Fullscreen Intro, Shooting Stars, Tachyon UI, Chat Bot, Prefix Echo (;), Click Audio
+--// Features: Fullscreen Intro, Shooting Stars, Tachyon UI, Chat Bot, Prefix Echo (;), Click Audio, Fly System (Fixed 3D Camera Flight)
 
 local player = game.Players.LocalPlayer
 local plr = player
@@ -1767,6 +1767,70 @@ styleButton(toSpawnBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180))
 toSpawnBtn.MouseButton1Click:Connect(function() teleportToSpawn() end)
 
 ----------------------------------------------------------
+-- FLY SYSTEM LOGIC (FIXED 3D CAMERA FLIGHT)
+----------------------------------------------------------
+local flying = false
+local flySpeed = 50
+local flyBodyGyro, flyBodyVelocity
+local flyConnection
+
+local function stopFly()
+	flying = false
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	
+	if hum then hum.PlatformStand = false end
+	if flyBodyGyro then flyBodyGyro:Destroy() flyBodyGyro = nil end
+	if flyBodyVelocity then flyBodyVelocity:Destroy() flyBodyVelocity = nil end
+	if flyConnection then flyConnection:Disconnect() flyConnection = nil end
+	
+	sendBlueChatMessage("[TACHYON] Fly Deactivated 🛬")
+end
+
+local function startFly()
+	local char = player.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	
+	if not hrp or not hum then return end
+	if flying then stopFly() end
+	
+	flying = true
+	hum.PlatformStand = true
+	
+	flyBodyGyro = Instance.new("BodyGyro", hrp)
+	flyBodyGyro.P = 9e4
+	flyBodyGyro.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+	flyBodyGyro.cframe = hrp.CFrame
+	
+	flyBodyVelocity = Instance.new("BodyVelocity", hrp)
+	flyBodyVelocity.velocity = Vector3.new(0, 0, 0)
+	flyBodyVelocity.maxForce = Vector3.new(9e9, 9e9, 9e9)
+	
+	flyConnection = RunService.RenderStepped:Connect(function()
+		if not flying or not hrp or not hum then
+			stopFly()
+			return
+		end
+		
+		local cam = workspace.CurrentCamera
+		flyBodyGyro.cframe = cam.CFrame
+		
+		-- Kalkulasi pergerakan 3D mengikuti arah kamera secara penuh (termasuk atas/bawah)
+		local flatRight = cam.CFrame.RightVector
+		local flatLook = Vector3.new(0, 1, 0):Cross(flatRight).Unit
+		
+		local moveDir = hum.MoveDirection
+		local zInput = flatLook:Dot(moveDir)
+		local xInput = flatRight:Dot(moveDir)
+		
+		flyBodyVelocity.velocity = (cam.CFrame.LookVector * zInput + cam.CFrame.RightVector * xInput) * flySpeed
+	end)
+	
+	sendBlueChatMessage("[TACHYON] Fly Activated ✈️")
+end
+
+----------------------------------------------------------
 -- CHAT COMMAND SYSTEM
 ----------------------------------------------------------
 player.Chatted:Connect(function(msg)
@@ -1882,7 +1946,9 @@ player.Chatted:Connect(function(msg)
 		loadstring([[game.Players.LocalPlayer.Character.Humanoid.Health = 0]])()
 		sendBlueChatMessage("[TACHYON] Character Reset! 💀")
 	elseif cmd == ":fly" then
-		if flying then stopFly() else startFly() end
+		startFly()
+	elseif cmd == ":unfly" then
+		stopFly()
 	elseif cmd == ":loopspeed" then
 		local val = tonumber(args[2])
 		if val then
