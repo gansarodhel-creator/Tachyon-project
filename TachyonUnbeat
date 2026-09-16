@@ -982,6 +982,42 @@ else
 	roleLabel.Text = "Statue : member | tachyon ware open source"
 	roleLabel.TextColor3 = Color3.fromRGB(180, 180, 190)
 end
+----------------------------------------------------------
+-- MUSIC AUTO-PLAY SYSTEM (MAIN TAB)
+----------------------------------------------------------
+local bgMusic = Instance.new("Sound")
+bgMusic.Name = "TachyonBGMusic"
+bgMusic.SoundId = "rbxassetid://120313972450310"
+bgMusic.Volume = 0.5
+bgMusic.Looped = true
+bgMusic.Parent = SoundService
+
+local musicEnabled = true
+bgMusic:Play() -- auto play saat script di-execute
+
+local musicToggleBtn = Instance.new("TextButton")
+musicToggleBtn.Size = UDim2.new(1, -20, 0, 32)
+musicToggleBtn.Position = UDim2.new(0, 10, 0, 196)
+musicToggleBtn.Text = "🎵 Music: ON"
+musicToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+musicToggleBtn.Font = Enum.Font.SourceSansBold
+musicToggleBtn.TextSize = 13
+musicToggleBtn.Parent = mainTab
+styleButton(musicToggleBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60))
+
+musicToggleBtn.MouseButton1Click:Connect(function()
+	musicEnabled = not musicEnabled
+	if musicEnabled then
+		bgMusic:Play()
+		musicToggleBtn.Text = "🎵 Music: ON"
+		styleButton(musicToggleBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60))
+	else
+		bgMusic:Stop()
+		musicToggleBtn.Text = "🎵 Music: OFF"
+		styleButton(musicToggleBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+	end
+end)
+
 
 ----------------------------------------------------------
 -- [2] TAB SETTINGS
