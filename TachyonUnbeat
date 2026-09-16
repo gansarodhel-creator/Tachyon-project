@@ -1,8 +1,6 @@
---// TACHYON v1.5.23 | INTRO SOUND UPDATED (ID: 8172662129 + CLICK SOUND + SHOOTING STARS)
---// Features: Fullscreen Intro, Shooting Stars, Tachyon UI, Chat Bot, Prefix Echo (;), Click Audio, Fly System (Fixed 3D Camera Flight)
+--// TACHYON v1.5.23 (1.5x UPSCALE + BLUE GLASS + FULLBRIGHT + MULTI-PLAYER GRIEF ALARM)
+--// Features: Fullscreen Intro, Shooting Stars, Tachyon UI, Tab Sparks, Chat Bot, Fly System, FullBright, Click Detector Grief Alarm
 
-local player = game.Players.LocalPlayer
-local plr = player
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TextChatService = game:GetService("TextChatService")
@@ -15,39 +13,146 @@ local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 
+local player = Players.LocalPlayer
+local plr = player
 local PlayerGui = player:WaitForChild("PlayerGui", 10)
 
--- Clean up old UI
-if CoreGui:FindFirstChild("TachyonWareUI") then CoreGui.TachyonWareUI:Destroy() end
-if PlayerGui:FindFirstChild("TachyonWareUI") then PlayerGui.TachyonWareUI:Destroy() end
-if CoreGui:FindFirstChild("TachyonIntro") then CoreGui.TachyonIntro:Destroy() end
-if CoreGui:FindFirstChild("TachyonTopBarOpen") then CoreGui.TachyonTopBarOpen:Destroy() end
+-- Tentukan parent GUI (CoreGui jika diizinkan, fallback ke PlayerGui)
+local targetGuiParent = CoreGui
+pcall(function()
+	local test = Instance.new("Folder", CoreGui)
+	test:Destroy()
+end)
+if not pcall(function() return CoreGui.Name end) then
+	targetGuiParent = PlayerGui
+end
+
+-- Bersihkan instance lama jika ada
+for _, parent in ipairs({CoreGui, PlayerGui}) do
+	pcall(function()
+		if parent:FindFirstChild("TachyonWareUI") then parent.TachyonWareUI:Destroy() end
+		if parent:FindFirstChild("TachyonIntro") then parent.TachyonIntro:Destroy() end
+		if parent:FindFirstChild("TachyonTopBarOpen") then parent.TachyonTopBarOpen:Destroy() end
+	end)
+end
 
 ----------------------------------------------------------
 -- CLICK SOUND HELPER SYSTEM
 ----------------------------------------------------------
 local function addClickSound(btn)
 	btn.MouseButton1Click:Connect(function()
-		local clickSound = Instance.new("Sound")
-		clickSound.SoundId = "rbxassetid://7043920820"
-		clickSound.Volume = 0.6
-		clickSound.Parent = SoundService
-		clickSound:Play()
-		clickSound.Ended:Connect(function()
-			clickSound:Destroy()
+		pcall(function()
+			local clickSound = Instance.new("Sound")
+			clickSound.SoundId = "rbxassetid://7043920820"
+			clickSound.Volume = 0.6
+			clickSound.Parent = SoundService
+			clickSound:Play()
+			clickSound.Ended:Connect(function()
+				clickSound:Destroy()
+			end)
 		end)
 	end)
 end
 
 ----------------------------------------------------------
--- MASSIVE FULLSCREEN INTRO (WITH SHOOTING STARS)
+-- UI ELECTRIC SPARK EFFECT HELPER
+----------------------------------------------------------
+local function spawnElectricSpark(button)
+	local numSparks = math.random(10, 16)
+	local colors = {
+		Color3.fromRGB(0, 255, 255),
+		Color3.fromRGB(160, 230, 255),
+		Color3.fromRGB(255, 255, 255),
+		Color3.fromRGB(0, 180, 255)
+	}
+
+	for _ = 1, numSparks do
+		task.spawn(function()
+			local spark = Instance.new("Frame")
+			local sparkLength = math.random(15, 32)
+			spark.Size = UDim2.new(0, sparkLength, 0, 3)
+			spark.Position = UDim2.new(0.5, 0, 0.5, 0)
+			spark.AnchorPoint = Vector2.new(0.5, 0.5)
+			spark.BackgroundColor3 = colors[math.random(1, #colors)]
+			spark.BorderSizePixel = 0
+			spark.ZIndex = button.ZIndex + 20
+			spark.Parent = button
+
+			local corner = Instance.new("UICorner", spark)
+			corner.CornerRadius = UDim.new(1, 0)
+
+			local glow = Instance.new("UIStroke", spark)
+			glow.Color = Color3.fromRGB(0, 220, 255)
+			glow.Thickness = 1.5
+			glow.Transparency = 0.1
+
+			local angle = math.rad(math.random(0, 360))
+			local distance = math.random(35, 80)
+			local targetX = math.cos(angle) * distance
+			local targetY = math.sin(angle) * distance
+			spark.Rotation = math.deg(angle)
+
+			local duration = math.random(18, 35) / 100
+
+			local moveTween = TweenService:Create(spark, TweenInfo.new(duration, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
+				Position = UDim2.new(0.5, targetX, 0.5, targetY),
+				Size = UDim2.new(0, 0, 0, 1),
+				BackgroundTransparency = 1,
+				Rotation = spark.Rotation + math.random(-45, 45)
+			})
+
+			local strokeTween = TweenService:Create(glow, TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+				Transparency = 1
+			})
+
+			moveTween:Play()
+			strokeTween:Play()
+
+			moveTween.Completed:Connect(function()
+				spark:Destroy()
+			end)
+		end)
+	end
+end
+
+----------------------------------------------------------
+-- MAIN UI CONSTRUCTION (720x465 + BLUE GLASS THEME)
+----------------------------------------------------------
+local sg = Instance.new("ScreenGui")
+sg.Name = "TachyonWareUI"
+sg.ResetOnSpawn = false
+sg.DisplayOrder = 10
+sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+sg.Parent = targetGuiParent
+
+local main = Instance.new("Frame")
+main.Name = "MainWindow"
+main.Size = UDim2.new(0, 720, 0, 465)
+main.Position = UDim2.new(0.5, -360, 0.5, -232)
+main.BackgroundColor3 = Color3.fromRGB(10, 20, 38)
+main.BackgroundTransparency = 0.25
+main.Active = true
+main.Draggable = true
+main.ClipsDescendants = false
+main.Visible = false
+main.Parent = sg
+
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 15)
+local mainStroke = Instance.new("UIStroke", main)
+mainStroke.Color = Color3.fromRGB(0, 140, 255)
+mainStroke.Transparency = 0.4
+mainStroke.Thickness = 2
+
+----------------------------------------------------------
+-- MASSIVE FULLSCREEN INTRO (DISPLAYORDER: 999)
 ----------------------------------------------------------
 local introGui = Instance.new("ScreenGui")
 introGui.Name = "TachyonIntro"
 introGui.ResetOnSpawn = false
 introGui.IgnoreGuiInset = true
+introGui.DisplayOrder = 999
 introGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-introGui.Parent = CoreGui
+introGui.Parent = targetGuiParent
 
 local bg = Instance.new("Frame", introGui)
 bg.Size = UDim2.new(1, 0, 1, 0)
@@ -56,11 +161,13 @@ bg.BackgroundColor3 = Color3.fromRGB(2, 2, 4)
 bg.BorderSizePixel = 0
 bg.ZIndex = 10
 
-local introSound = Instance.new("Sound")
-introSound.SoundId = "rbxassetid://8172662129"
-introSound.Volume = 10
-introSound.Parent = SoundService
-introSound:Play()
+pcall(function()
+	local introSound = Instance.new("Sound")
+	introSound.SoundId = "rbxassetid://8172662129"
+	introSound.Volume = 5
+	introSound.Parent = SoundService
+	introSound:Play()
+end)
 
 local function createOrb(pos, size, color1, color2)
 	local orb = Instance.new("Frame", bg)
@@ -87,7 +194,6 @@ createOrb(UDim2.new(0.35, 0, -0.08, 0), UDim2.new(0, 160, 0, 160), Color3.fromRG
 createOrb(UDim2.new(-0.05, 0, 0.65, 0), UDim2.new(0, 200, 0, 200), Color3.fromRGB(255, 0, 150), Color3.fromRGB(0, 100, 255))
 createOrb(UDim2.new(0.85, 0, -0.05, 0), UDim2.new(0, 140, 0, 140), Color3.fromRGB(255, 220, 0), Color3.fromRGB(255, 0, 0))
 
---// EFEK BINTANG JATUH (SHOOTING STAR)
 local function createShootingStar()
 	if not bg or not bg.Parent then return end
 	
@@ -119,7 +225,7 @@ local function createShootingStar()
 	}):Play()
 	
 	task.delay(fallDuration, function()
-		if star then star:Destroy() end
+		if star and star.Parent then star:Destroy() end
 	end)
 end
 
@@ -201,53 +307,54 @@ shakeConn = RunService.RenderStepped:Connect(function()
 		TweenService:Create(underline, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 1}):Play()
 		TweenService:Create(subText, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 1}):Play()
 		task.wait(0.6)
-		introGui:Destroy()
+		if introGui and introGui.Parent then introGui:Destroy() end
+		if main then main.Visible = true end
 	end
 end)
-
-task.wait(3.8)
 
 ----------------------------------------------------------
 -- CORE SYSTEM FUNCTIONS
 ----------------------------------------------------------
 local function sendBlueChatMessage(msgText)
-	if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-		local generalChannel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-		if generalChannel then
-			generalChannel:DisplaySystemMessage("<font color='#00A2FF'><b>" .. msgText .. "</b></font>")
-		end
-	else
-		pcall(function()
+	pcall(function()
+		if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+			local generalChannel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+			if generalChannel then
+				generalChannel:DisplaySystemMessage("<font color='#00A2FF'><b>" .. msgText .. "</b></font>")
+			end
+		else
 			StarterGui:SetCore("ChatMakeSystemMessage", {
 				Text = msgText,
 				Color = Color3.fromRGB(0, 162, 255),
 				Font = Enum.Font.SourceSansBold,
 				TextSize = 18
 			})
-		end)
-	end
+		end
+	end)
 end
 
 local function executePublicChat(msgText)
-	if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-		local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
-		if ch then ch:SendAsync(msgText) end
-	else
-		local chatEvent = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
-		if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
-			chatEvent.SayMessageRequest:FireServer(msgText, "All")
+	pcall(function()
+		if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+			local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+			if ch then ch:SendAsync(msgText) end
+		else
+			local chatEvent = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
+			if chatEvent and chatEvent:FindFirstChild("SayMessageRequest") then
+				chatEvent.SayMessageRequest:FireServer(msgText, "All")
+			end
 		end
-	end
+	end)
 end
 
 ----------------------------------------------------------
 -- VISUAL UTILITIES
 ----------------------------------------------------------
 local function clearFog()
-	for _, obj in ipairs(Lighting:GetChildren()) do
-		if obj:IsA("Atmosphere") then obj:Destroy() end
-	end
 	pcall(function()
+		for _, obj in ipairs(Lighting:GetChildren()) do
+			if obj:IsA("Atmosphere") then obj:Destroy() end
+		end
 		Lighting.FogEnd = 100000
 		Lighting.FogStart = 0
 	end)
@@ -255,12 +362,65 @@ local function clearFog()
 end
 
 local function uncursed()
-	for _, obj in ipairs(Lighting:GetChildren()) do
-		if obj:IsA("ColorCorrectionEffect") then
-			pcall(function() obj.Saturation = 0 end)
+	pcall(function()
+		for _, obj in ipairs(Lighting:GetChildren()) do
+			if obj:IsA("ColorCorrectionEffect") then
+				obj.Saturation = 0
+			end
 		end
-	end
+	end)
 	sendBlueChatMessage("[TACHYON] Uncursed: RGB Saturation set to 0! ✨")
+end
+
+----------------------------------------------------------
+-- FULLBRIGHT SYSTEM
+----------------------------------------------------------
+local fullBrightEnabled = false
+local fullBrightConnection = nil
+local originalLightingSettings = {
+	Brightness = Lighting.Brightness,
+	ClockTime = Lighting.ClockTime,
+	FogEnd = Lighting.FogEnd,
+	GlobalShadows = Lighting.GlobalShadows,
+	OutdoorAmbient = Lighting.OutdoorAmbient,
+	Ambient = Lighting.Ambient
+}
+
+local function setFullBright(state)
+	fullBrightEnabled = state
+	if fullBrightEnabled then
+		originalLightingSettings.Brightness = Lighting.Brightness
+		originalLightingSettings.ClockTime = Lighting.ClockTime
+		originalLightingSettings.FogEnd = Lighting.FogEnd
+		originalLightingSettings.GlobalShadows = Lighting.GlobalShadows
+		originalLightingSettings.OutdoorAmbient = Lighting.OutdoorAmbient
+		originalLightingSettings.Ambient = Lighting.Ambient
+
+		fullBrightConnection = RunService.RenderStepped:Connect(function()
+			if not fullBrightEnabled then return end
+			Lighting.Brightness = 2
+			Lighting.ClockTime = 14
+			Lighting.FogEnd = 100000
+			Lighting.GlobalShadows = false
+			Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+			Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+		end)
+		sendBlueChatMessage("[TACHYON] FullBright Activated: ON 💡✨")
+	else
+		if fullBrightConnection then
+			fullBrightConnection:Disconnect()
+			fullBrightConnection = nil
+		end
+		pcall(function()
+			Lighting.Brightness = originalLightingSettings.Brightness
+			Lighting.ClockTime = originalLightingSettings.ClockTime
+			Lighting.FogEnd = originalLightingSettings.FogEnd
+			Lighting.GlobalShadows = originalLightingSettings.GlobalShadows
+			Lighting.OutdoorAmbient = originalLightingSettings.OutdoorAmbient
+			Lighting.Ambient = originalLightingSettings.Ambient
+		end)
+		sendBlueChatMessage("[TACHYON] FullBright Deactivated: OFF 🌑")
+	end
 end
 
 ----------------------------------------------------------
@@ -269,7 +429,7 @@ end
 local function teleportToSpawn()
 	local char = player.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart")
-	local spawnObj = workspace:FindFirstChild("Spawn")
+	local spawnObj = workspace:FindFirstChild("Spawn") or workspace:FindFirstChild("SpawnLocation")
 	
 	if hrp and spawnObj and spawnObj:IsA("BasePart") then
 		hrp.CFrame = spawnObj.CFrame + Vector3.new(0, 3, 0)
@@ -298,7 +458,7 @@ end
 
 player.CharacterAdded:Connect(function(newChar)
 	if antiMaptideEnabled then
-		local hrp = newChar:WaitForChild("HumanoidRootPart", 2)
+		local hrp = newChar:WaitForChild("HumanoidRootPart", 5)
 		if hrp and antiMaptideEnabled then hrp.CFrame = CFrame.new(-99, 193, -112) end
 	end
 end)
@@ -407,7 +567,7 @@ local function StartAntiDrag()
 	local timer = 0
 	antiDragConnection = RunService.Heartbeat:Connect(function(dt)
 		if not antiDragEnabled then return end
-		timer += dt
+		timer = timer + dt
 		if timer < 0.1 then return end
 		timer = 0
 
@@ -544,18 +704,19 @@ end
 ----------------------------------------------------------
 -- HELPER: STYLING BUTTON + CLICK SOUND
 ----------------------------------------------------------
-local function styleButton(btn, startColor, endColor)
+local function styleButton(btn, startColor, endColor, bgTrans)
 	btn.AutoButtonColor = true
 	btn.BackgroundColor3 = startColor
+	btn.BackgroundTransparency = bgTrans or 0
 
 	local corner = btn:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 8)
+	corner.CornerRadius = UDim.new(0, 10)
 	corner.Parent = btn
 
 	local stroke = btn:FindFirstChildOfClass("UIStroke") or Instance.new("UIStroke")
 	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	stroke.Color = Color3.fromRGB(255, 255, 255)
-	stroke.Transparency = 0.8
+	stroke.Color = Color3.fromRGB(0, 170, 255)
+	stroke.Transparency = 0.4
 	stroke.Thickness = 1.5
 	stroke.Parent = btn
 
@@ -591,7 +752,7 @@ end
 local function antiVamp()
 	local char = player.Character or player.CharacterAdded:Wait()
 	local hum = char:WaitForChild("Humanoid")
-	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, true)
+	pcall(function() StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, true) end)
 	workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
 	workspace.CurrentCamera.CameraSubject = hum
 	if hum.WalkSpeed == 0 then hum.WalkSpeed = 16 end
@@ -623,12 +784,15 @@ local function stopAutoGrab()
 end
 
 local function antiVisual()
-	local lighting = Lighting
-	for _, v in pairs(lighting:GetChildren()) do if v:IsA("BlurEffect") then v:Destroy() end end
-	for _, gui in pairs(PlayerGui:GetChildren()) do
-		if gui:IsA("ScreenGui") and (string.find(string.lower(gui.Name), "blind") or string.find(string.lower(gui.Name), "dark")) then gui:Destroy() end
+	for _, v in pairs(Lighting:GetChildren()) do 
+		if v:IsA("BlurEffect") then v:Destroy() end 
 	end
-	lighting.Brightness = 2
+	for _, gui in pairs(PlayerGui:GetChildren()) do
+		if gui:IsA("ScreenGui") and (string.find(string.lower(gui.Name), "blind") or string.find(string.lower(gui.Name), "dark")) then 
+			gui:Destroy() 
+		end
+	end
+	Lighting.Brightness = 2
 end
 
 local function gotoPlayer(name)
@@ -652,101 +816,82 @@ topBarOpenGui.Name = "TachyonTopBarOpen"
 topBarOpenGui.ResetOnSpawn = false
 topBarOpenGui.IgnoreGuiInset = true
 topBarOpenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-topBarOpenGui.Parent = CoreGui
+topBarOpenGui.Parent = targetGuiParent
 
 local openBtn = Instance.new("TextButton")
-openBtn.Size = UDim2.new(0, 104, 0, 60)
+openBtn.Size = UDim2.new(0, 130, 0, 50)
 openBtn.Position = UDim2.new(0, 335, 0, 6)
 openBtn.Text = "Open"
-openBtn.BackgroundColor3 = Color3.fromRGB(30, 140, 255)
 openBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 openBtn.Font = Enum.Font.SourceSansBold
-openBtn.TextSize = 26
+openBtn.TextSize = 24
 openBtn.Visible = false
 openBtn.Parent = topBarOpenGui
-styleButton(openBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180))
+styleButton(openBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180), 0.2)
 
 ----------------------------------------------------------
--- MAIN UI CONSTRUCTION
+-- ATTACH WINDOW COMPONENTS
 ----------------------------------------------------------
-local sg = Instance.new("ScreenGui")
-sg.Name = "TachyonWareUI"
-sg.ResetOnSpawn = false
-sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-sg.Parent = CoreGui
-
-local main = Instance.new("Frame")
-main.Name = "MainWindow"
-main.Size = UDim2.new(0, 480, 0, 310)
-main.Position = UDim2.new(0.5, -240, 0.5, -155)
-main.BackgroundColor3 = Color3.fromRGB(14, 14, 18)
-main.Active = true
-main.Draggable = true
-main.ClipsDescendants = true
-main.Parent = sg
-
-Instance.new("UICorner", main).CornerRadius = UDim.new(0, 10)
-local mainStroke = Instance.new("UIStroke", main)
-mainStroke.Color = Color3.fromRGB(45, 45, 60)
-mainStroke.Thickness = 1.5
-
 local topBar = Instance.new("Frame")
-topBar.Size = UDim2.new(1, 0, 0, 30)
-topBar.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+topBar.Size = UDim2.new(1, 0, 0, 42)
+topBar.BackgroundColor3 = Color3.fromRGB(15, 30, 60)
+topBar.BackgroundTransparency = 0.35
 topBar.Parent = main
-Instance.new("UICorner", topBar).CornerRadius = UDim.new(0, 10)
+Instance.new("UICorner", topBar).CornerRadius = UDim.new(0, 15)
 
 local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 28, 0, 28)
-closeBtn.Position = UDim2.new(0, 4, 0, 1)
+closeBtn.Size = UDim2.new(0, 38, 0, 38)
+closeBtn.Position = UDim2.new(0, 6, 0, 2)
 closeBtn.Text = "X"
 closeBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
 closeBtn.BackgroundTransparency = 1
 closeBtn.Font = Enum.Font.SourceSansBold
-closeBtn.TextSize = 16
+closeBtn.TextSize = 22
 closeBtn.Parent = topBar
 addClickSound(closeBtn)
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -90, 1, 0)
-title.Position = UDim2.new(0, 36, 0, 0)
+title.Size = UDim2.new(1, -120, 1, 0)
+title.Position = UDim2.new(0, 50, 0, 0)
 title.Text = "TACHYON v1.5.23"
 title.TextColor3 = Color3.fromRGB(0, 255, 255)
 title.Font = Enum.Font.SourceSansBold
-title.TextSize = 14
+title.TextSize = 18
 title.BackgroundTransparency = 1
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = topBar
 
 local minimizeBtn = Instance.new("TextButton")
-minimizeBtn.Size = UDim2.new(0, 28, 0, 28)
-minimizeBtn.Position = UDim2.new(1, -28, 0, 0)
+minimizeBtn.Size = UDim2.new(0, 38, 0, 38)
+minimizeBtn.Position = UDim2.new(1, -42, 0, 2)
 minimizeBtn.Text = "-"
 minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 minimizeBtn.BackgroundTransparency = 1
 minimizeBtn.Font = Enum.Font.SourceSansBold
-minimizeBtn.TextSize = 18
+minimizeBtn.TextSize = 24
 minimizeBtn.Parent = topBar
 addClickSound(minimizeBtn)
 
 local sidebar = Instance.new("Frame")
-sidebar.Size = UDim2.new(0, 110, 1, -30)
-sidebar.Position = UDim2.new(0, 0, 0, 30)
-sidebar.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+sidebar.Size = UDim2.new(0, 165, 1, -42)
+sidebar.Position = UDim2.new(0, 0, 0, 42)
+sidebar.BackgroundColor3 = Color3.fromRGB(12, 24, 45)
+sidebar.BackgroundTransparency = 0.35
+sidebar.ClipsDescendants = false
 sidebar.Parent = main
 
 local sideLayout = Instance.new("UIListLayout", sidebar)
 sideLayout.SortOrder = Enum.SortOrder.LayoutOrder
-sideLayout.Padding = UDim.new(0, 4)
+sideLayout.Padding = UDim.new(0, 6)
 
 local sidePadding = Instance.new("UIPadding", sidebar)
-sidePadding.PaddingTop = UDim.new(0, 6)
-sidePadding.PaddingLeft = UDim.new(0, 6)
-sidePadding.PaddingRight = UDim.new(0, 6)
+sidePadding.PaddingTop = UDim.new(0, 10)
+sidePadding.PaddingLeft = UDim.new(0, 10)
+sidePadding.PaddingRight = UDim.new(0, 10)
 
 local contentArea = Instance.new("Frame")
-contentArea.Size = UDim2.new(1, -110, 1, -30)
-contentArea.Position = UDim2.new(0, 110, 0, 30)
+contentArea.Size = UDim2.new(1, -165, 1, -42)
+contentArea.Position = UDim2.new(0, 165, 0, 42)
 contentArea.BackgroundTransparency = 1
 contentArea.Parent = main
 
@@ -764,7 +909,7 @@ openBtn.MouseButton1Click:Connect(function()
 	openBtn.Visible = false
 	main.Visible = true
 	if isMinimized then
-		main.Size = UDim2.new(0, 480, 0, 310)
+		main.Size = UDim2.new(0, 720, 0, 465)
 		sidebar.Visible = true
 		contentArea.Visible = true
 		minimizeBtn.Text = "-"
@@ -780,13 +925,13 @@ minimizeBtn.MouseButton1Click:Connect(function()
 		minimizeBtn.Text = "+"
 		
 		local tweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-		TweenService:Create(main, tweenInfo, {Size = UDim2.new(0, 480, 0, 30)}):Play()
+		TweenService:Create(main, tweenInfo, {Size = UDim2.new(0, 720, 0, 42)}):Play()
 	else
 		isMinimized = false
 		minimizeBtn.Text = "-"
 		
 		local tweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-		local tween = TweenService:Create(main, tweenInfo, {Size = UDim2.new(0, 480, 0, 310)})
+		local tween = TweenService:Create(main, tweenInfo, {Size = UDim2.new(0, 720, 0, 465)})
 		tween:Play()
 		
 		tween.Completed:Connect(function()
@@ -799,23 +944,24 @@ minimizeBtn.MouseButton1Click:Connect(function()
 end)
 
 ----------------------------------------------------------
--- MULTI-TAB SYSTEM
+-- MULTI-TAB SYSTEM (ELECTRIC SPARK & BLUE GLASS THEMED)
 ----------------------------------------------------------
 local tabFrames = {}
 local tabButtons = {}
 
 local function createTab(tabName, layoutOrder)
 	local tabBtn = Instance.new("TextButton")
-	tabBtn.Size = UDim2.new(1, 0, 0, 28)
+	tabBtn.Size = UDim2.new(1, 0, 0, 40)
 	tabBtn.Text = tabName
-	tabBtn.TextColor3 = Color3.fromRGB(160, 160, 170)
-	tabBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+	tabBtn.TextColor3 = Color3.fromRGB(180, 210, 255)
+	tabBtn.BackgroundColor3 = Color3.fromRGB(15, 35, 65)
 	tabBtn.Font = Enum.Font.SourceSansBold
-	tabBtn.TextSize = 13
+	tabBtn.TextSize = 17
 	tabBtn.LayoutOrder = layoutOrder
+	tabBtn.ClipsDescendants = false
 	tabBtn.Parent = sidebar
 
-	styleButton(tabBtn, Color3.fromRGB(30, 30, 38), Color3.fromRGB(20, 20, 26))
+	styleButton(tabBtn, Color3.fromRGB(15, 35, 65), Color3.fromRGB(8, 20, 40), 0.4)
 
 	local pageFrame = Instance.new("Frame")
 	pageFrame.Size = UDim2.new(1, 0, 1, 0)
@@ -827,14 +973,16 @@ local function createTab(tabName, layoutOrder)
 	tabButtons[tabName] = tabBtn
 
 	tabBtn.MouseButton1Click:Connect(function()
+		spawnElectricSpark(tabBtn)
+
 		for name, frame in pairs(tabFrames) do frame.Visible = (name == tabName) end
 		for name, btn in pairs(tabButtons) do
 			if name == tabName then
-				styleButton(btn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180))
+				styleButton(btn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 200), 0.1)
 				btn.TextColor3 = Color3.fromRGB(255, 255, 255)
 			else
-				styleButton(btn, Color3.fromRGB(30, 30, 38), Color3.fromRGB(20, 20, 26))
-				btn.TextColor3 = Color3.fromRGB(160, 160, 170)
+				styleButton(btn, Color3.fromRGB(15, 35, 65), Color3.fromRGB(8, 20, 40), 0.4)
+				btn.TextColor3 = Color3.fromRGB(180, 210, 255)
 			end
 		end
 	end)
@@ -843,14 +991,25 @@ local function createTab(tabName, layoutOrder)
 end
 
 local function applyAutoLayout(container)
-	local layout = Instance.new("UIListLayout", container)
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Padding = UDim.new(0, 8)
+	local scroll = Instance.new("ScrollingFrame", container)
+	scroll.Size = UDim2.new(1, 0, 1, 0)
+	scroll.BackgroundTransparency = 1
+	scroll.BorderSizePixel = 0
+	scroll.ScrollBarThickness = 4
+	scroll.ScrollBarImageColor3 = Color3.fromRGB(0, 140, 255)
+	scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+	scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 
-	local pad = Instance.new("UIPadding", container)
-	pad.PaddingTop = UDim.new(0, 12)
-	pad.PaddingLeft = UDim.new(0, 12)
-	pad.PaddingRight = UDim.new(0, 12)
+	local layout = Instance.new("UIListLayout", scroll)
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Padding = UDim.new(0, 12)
+
+	local pad = Instance.new("UIPadding", scroll)
+	pad.PaddingTop = UDim.new(0, 18)
+	pad.PaddingLeft = UDim.new(0, 18)
+	pad.PaddingRight = UDim.new(0, 18)
+
+	return scroll
 end
 
 local mainTab     = createTab("Main", 1)
@@ -860,128 +1019,154 @@ local tcoTab      = createTab("TCO", 4)
 local trollTab    = createTab("Troll", 5)
 local miscTab     = createTab("Misc", 6)
 
-applyAutoLayout(visualTab)
-applyAutoLayout(trollTab)
-applyAutoLayout(miscTab)
+local visualScroll = applyAutoLayout(visualTab)
+local trollScroll  = applyAutoLayout(trollTab)
+local miscScroll   = applyAutoLayout(miscTab)
 
-local tcoPad = Instance.new("UIPadding", tcoTab)
-tcoPad.PaddingTop = UDim.new(0, 12)
-tcoPad.PaddingLeft = UDim.new(0, 12)
-tcoPad.PaddingRight = UDim.new(0, 12)
+local tcoScroll = Instance.new("ScrollingFrame", tcoTab)
+tcoScroll.Size = UDim2.new(1, 0, 1, 0)
+tcoScroll.BackgroundTransparency = 1
+tcoScroll.BorderSizePixel = 0
+tcoScroll.ScrollBarThickness = 4
+tcoScroll.ScrollBarImageColor3 = Color3.fromRGB(0, 140, 255)
+tcoScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+tcoScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+
+local tcoLayout = Instance.new("UIListLayout", tcoScroll)
+tcoLayout.SortOrder = Enum.SortOrder.LayoutOrder
+tcoLayout.Padding = UDim.new(0, 12)
+
+local tcoPad = Instance.new("UIPadding", tcoScroll)
+tcoPad.PaddingTop = UDim.new(0, 18)
+tcoPad.PaddingLeft = UDim.new(0, 18)
+tcoPad.PaddingRight = UDim.new(0, 18)
 
 mainTab.Visible = true
-styleButton(tabButtons["Main"], Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180))
+styleButton(tabButtons["Main"], Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 200), 0.1)
 tabButtons["Main"].TextColor3 = Color3.fromRGB(255, 255, 255)
 
 ----------------------------------------------------------
 -- [1] TAB MAIN
 ----------------------------------------------------------
 local infoCard = Instance.new("Frame")
-infoCard.Size = UDim2.new(1, -20, 0, 100)
-infoCard.Position = UDim2.new(0, 10, 0, 10)
-infoCard.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+infoCard.Size = UDim2.new(1, -30, 0, 150)
+infoCard.Position = UDim2.new(0, 15, 0, 15)
+infoCard.BackgroundColor3 = Color3.fromRGB(15, 32, 60)
+infoCard.BackgroundTransparency = 0.35
 infoCard.Parent = mainTab
-Instance.new("UICorner", infoCard).CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", infoCard).CornerRadius = UDim.new(0, 12)
+local infoStroke = Instance.new("UIStroke", infoCard)
+infoStroke.Color = Color3.fromRGB(0, 140, 255)
+infoStroke.Transparency = 0.5
 
 local profileImg = Instance.new("ImageLabel")
-profileImg.Size = UDim2.new(0, 48, 0, 48)
-profileImg.Position = UDim2.new(0, 10, 0, 10)
+profileImg.Size = UDim2.new(0, 72, 0, 72)
+profileImg.Position = UDim2.new(0, 15, 0, 15)
 profileImg.Image = "rbxthumb://type=AvatarHeadShot&id=" .. player.UserId .. "&w=150&h=150"
 profileImg.Parent = infoCard
-Instance.new("UICorner", profileImg).CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", profileImg).CornerRadius = UDim.new(0, 12)
 
 local nameLabel = Instance.new("TextLabel")
-nameLabel.Size = UDim2.new(0, 160, 0, 20)
-nameLabel.Position = UDim2.new(0, 65, 0, 12)
+nameLabel.Size = UDim2.new(0, 240, 0, 28)
+nameLabel.Position = UDim2.new(0, 98, 0, 18)
 nameLabel.Text = player.DisplayName
 nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 nameLabel.TextXAlignment = Enum.TextXAlignment.Left
 nameLabel.BackgroundTransparency = 1
 nameLabel.Font = Enum.Font.SourceSansBold
-nameLabel.TextSize = 15
+nameLabel.TextSize = 20
 nameLabel.Parent = infoCard
 
 local userLabel = Instance.new("TextLabel")
-userLabel.Size = UDim2.new(0, 160, 0, 15)
-userLabel.Position = UDim2.new(0, 65, 0, 32)
+userLabel.Size = UDim2.new(0, 240, 0, 22)
+userLabel.Position = UDim2.new(0, 98, 0, 46)
 userLabel.Text = "@" .. player.Name
-userLabel.TextColor3 = Color3.fromRGB(140, 140, 150)
+userLabel.TextColor3 = Color3.fromRGB(170, 195, 230)
 userLabel.TextXAlignment = Enum.TextXAlignment.Left
 userLabel.BackgroundTransparency = 1
 userLabel.Font = Enum.Font.SourceSans
-userLabel.TextSize = 13
+userLabel.TextSize = 17
 userLabel.Parent = infoCard
 
 local pingLabel = Instance.new("TextLabel")
-pingLabel.Size = UDim2.new(0, 100, 0, 25)
-pingLabel.Position = UDim2.new(1, -110, 0, 10)
-pingLabel.Text = "PING: 0 ms"
+pingLabel.Size = UDim2.new(0, 150, 0, 35)
+pingLabel.Position = UDim2.new(1, -165, 0, 15)
+pingLabel.Text = "PING: -- ms"
 pingLabel.TextColor3 = Color3.fromRGB(0, 220, 120)
 pingLabel.TextXAlignment = Enum.TextXAlignment.Right
 pingLabel.BackgroundTransparency = 1
 pingLabel.Font = Enum.Font.SourceSansBold
-pingLabel.TextSize = 14
+pingLabel.TextSize = 18
 pingLabel.Parent = infoCard
 
 task.spawn(function()
 	while task.wait(1) do
-		local pingValue = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
-		pingLabel.Text = "PING: " .. pingValue .. " ms"
-		if pingValue < 100 then pingLabel.TextColor3 = Color3.fromRGB(0, 220, 120)
-		elseif pingValue < 200 then pingLabel.TextColor3 = Color3.fromRGB(220, 180, 0)
-		else pingLabel.TextColor3 = Color3.fromRGB(220, 50, 50) end
+		local success, pingValue = pcall(function()
+			return math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
+		end)
+		if success and pingValue then
+			pingLabel.Text = "PING: " .. pingValue .. " ms"
+			if pingValue < 100 then pingLabel.TextColor3 = Color3.fromRGB(0, 220, 120)
+			elseif pingValue < 200 then pingLabel.TextColor3 = Color3.fromRGB(220, 180, 0)
+			else pingLabel.TextColor3 = Color3.fromRGB(220, 50, 50) end
+		else
+			pingLabel.Text = "PING: OK"
+		end
 	end
 end)
 
 local sloganLabel = Instance.new("TextLabel")
-sloganLabel.Size = UDim2.new(1, -20, 0, 25)
-sloganLabel.Position = UDim2.new(0, 10, 0, 68)
+sloganLabel.Size = UDim2.new(1, -30, 0, 35)
+sloganLabel.Position = UDim2.new(0, 15, 0, 102)
 sloganLabel.Text = "💎 Tachyon script is the best 💎"
 sloganLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
 sloganLabel.BackgroundTransparency = 1
 sloganLabel.Font = Enum.Font.SourceSansBold
-sloganLabel.TextSize = 13
+sloganLabel.TextSize = 18
 sloganLabel.Parent = infoCard
 
 local statusBox = Instance.new("Frame")
-statusBox.Size = UDim2.new(1, -20, 0, 70)
-statusBox.Position = UDim2.new(0, 10, 0, 118)
-statusBox.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+statusBox.Size = UDim2.new(1, -30, 0, 105)
+statusBox.Position = UDim2.new(0, 15, 0, 180)
+statusBox.BackgroundColor3 = Color3.fromRGB(15, 32, 60)
+statusBox.BackgroundTransparency = 0.35
 statusBox.Parent = mainTab
-Instance.new("UICorner", statusBox).CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", statusBox).CornerRadius = UDim.new(0, 12)
 local statusStroke = Instance.new("UIStroke", statusBox)
-statusStroke.Color = Color3.fromRGB(45, 45, 60)
+statusStroke.Color = Color3.fromRGB(0, 140, 255)
+statusStroke.Transparency = 0.5
 
 local welcomeLabel = Instance.new("TextLabel")
-welcomeLabel.Size = UDim2.new(1, -20, 0, 22)
-welcomeLabel.Position = UDim2.new(0, 10, 0, 8)
+welcomeLabel.Size = UDim2.new(1, -30, 0, 32)
+welcomeLabel.Position = UDim2.new(0, 15, 0, 12)
 welcomeLabel.TextXAlignment = Enum.TextXAlignment.Left
 welcomeLabel.BackgroundTransparency = 1
 welcomeLabel.Font = Enum.Font.SourceSansBold
-welcomeLabel.TextSize = 14
+welcomeLabel.TextSize = 19
 welcomeLabel.Parent = statusBox
 
 local roleLabel = Instance.new("TextLabel")
-roleLabel.Size = UDim2.new(1, -20, 0, 22)
-roleLabel.Position = UDim2.new(0, 10, 0, 32)
+roleLabel.Size = UDim2.new(1, -30, 0, 32)
+roleLabel.Position = UDim2.new(0, 15, 0, 48)
 roleLabel.TextXAlignment = Enum.TextXAlignment.Left
 roleLabel.BackgroundTransparency = 1
 roleLabel.Font = Enum.Font.SourceSans
-roleLabel.TextSize = 13
+roleLabel.TextSize = 18
 roleLabel.Parent = statusBox
 
 local isOwner = OWNER_USERNAMES[player.Name] or false
 if isOwner then
 	welcomeLabel.Text = "Welcome " .. player.Name
-	welcomeLabel.TextColor3 = Color3.fromRGB(0, 180, 255)
+	welcomeLabel.TextColor3 = Color3.fromRGB(0, 200, 255)
 	roleLabel.Text = "Statue : owner | tachyon ware open source"
 	roleLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
 else
 	welcomeLabel.Text = "Welcome " .. player.Name
-	welcomeLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+	welcomeLabel.TextColor3 = Color3.fromRGB(210, 230, 255)
 	roleLabel.Text = "Statue : member | tachyon ware open source"
-	roleLabel.TextColor3 = Color3.fromRGB(180, 180, 190)
+	roleLabel.TextColor3 = Color3.fromRGB(180, 200, 230)
 end
+
 ----------------------------------------------------------
 -- MUSIC AUTO-PLAY SYSTEM (MAIN TAB)
 ----------------------------------------------------------
@@ -993,31 +1178,30 @@ bgMusic.Looped = true
 bgMusic.Parent = SoundService
 
 local musicEnabled = true
-bgMusic:Play() -- auto play saat script di-execute
+pcall(function() bgMusic:Play() end)
 
 local musicToggleBtn = Instance.new("TextButton")
-musicToggleBtn.Size = UDim2.new(1, -20, 0, 32)
-musicToggleBtn.Position = UDim2.new(0, 10, 0, 196)
+musicToggleBtn.Size = UDim2.new(1, -30, 0, 48)
+musicToggleBtn.Position = UDim2.new(0, 15, 0, 300)
 musicToggleBtn.Text = "🎵 Music: ON"
 musicToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 musicToggleBtn.Font = Enum.Font.SourceSansBold
-musicToggleBtn.TextSize = 13
+musicToggleBtn.TextSize = 17
 musicToggleBtn.Parent = mainTab
-styleButton(musicToggleBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60))
+styleButton(musicToggleBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60), 0.2)
 
 musicToggleBtn.MouseButton1Click:Connect(function()
 	musicEnabled = not musicEnabled
 	if musicEnabled then
-		bgMusic:Play()
+		pcall(function() bgMusic:Play() end)
 		musicToggleBtn.Text = "🎵 Music: ON"
-		styleButton(musicToggleBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60))
+		styleButton(musicToggleBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60), 0.2)
 	else
-		bgMusic:Stop()
+		pcall(function() bgMusic:Stop() end)
 		musicToggleBtn.Text = "🎵 Music: OFF"
-		styleButton(musicToggleBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+		styleButton(musicToggleBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.4)
 	end
 end)
-
 
 ----------------------------------------------------------
 -- [2] TAB SETTINGS
@@ -1028,68 +1212,70 @@ local isSpeedSet = false
 local isJumpSet = false
 
 local speedLabel = Instance.new("TextLabel")
-speedLabel.Size = UDim2.new(0, 80, 0, 30)
-speedLabel.Position = UDim2.new(0, 10, 0, 15)
+speedLabel.Size = UDim2.new(0, 120, 0, 42)
+speedLabel.Position = UDim2.new(0, 15, 0, 20)
 speedLabel.Text = "Speed :"
 speedLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 speedLabel.TextXAlignment = Enum.TextXAlignment.Left
 speedLabel.BackgroundTransparency = 1
 speedLabel.Font = Enum.Font.SourceSansBold
-speedLabel.TextSize = 14
+speedLabel.TextSize = 18
 speedLabel.Parent = settingsTab
 
 local speedBox = Instance.new("TextBox")
-speedBox.Size = UDim2.new(0, 100, 0, 30)
-speedBox.Position = UDim2.new(0, 90, 0, 15)
+speedBox.Size = UDim2.new(0, 150, 0, 42)
+speedBox.Position = UDim2.new(0, 135, 0, 20)
 speedBox.PlaceholderText = "16"
-speedBox.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+speedBox.BackgroundColor3 = Color3.fromRGB(15, 32, 60)
+speedBox.BackgroundTransparency = 0.3
 speedBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 speedBox.Font = Enum.Font.SourceSans
-speedBox.TextSize = 14
+speedBox.TextSize = 18
 speedBox.Parent = settingsTab
-Instance.new("UICorner", speedBox).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", speedBox).CornerRadius = UDim.new(0, 8)
 
 local applySpeedBtn = Instance.new("TextButton")
-applySpeedBtn.Size = UDim2.new(0, 90, 0, 30)
-applySpeedBtn.Position = UDim2.new(0, 200, 0, 15)
+applySpeedBtn.Size = UDim2.new(0, 135, 0, 42)
+applySpeedBtn.Position = UDim2.new(0, 300, 0, 20)
 applySpeedBtn.Text = "Apply Speed"
 applySpeedBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 applySpeedBtn.Font = Enum.Font.SourceSansBold
-applySpeedBtn.TextSize = 12
+applySpeedBtn.TextSize = 16
 applySpeedBtn.Parent = settingsTab
-styleButton(applySpeedBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180))
+styleButton(applySpeedBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180), 0.2)
 
 local jumpLabel = Instance.new("TextLabel")
-jumpLabel.Size = UDim2.new(0, 80, 0, 30)
-jumpLabel.Position = UDim2.new(0, 10, 0, 55)
+jumpLabel.Size = UDim2.new(0, 120, 0, 42)
+jumpLabel.Position = UDim2.new(0, 15, 0, 80)
 jumpLabel.Text = "JumpPower :"
 jumpLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 jumpLabel.TextXAlignment = Enum.TextXAlignment.Left
 jumpLabel.BackgroundTransparency = 1
 jumpLabel.Font = Enum.Font.SourceSansBold
-jumpLabel.TextSize = 14
+jumpLabel.TextSize = 18
 jumpLabel.Parent = settingsTab
 
 local jumpBox = Instance.new("TextBox")
-jumpBox.Size = UDim2.new(0, 100, 0, 30)
-jumpBox.Position = UDim2.new(0, 90, 0, 55)
+jumpBox.Size = UDim2.new(0, 150, 0, 42)
+jumpBox.Position = UDim2.new(0, 135, 0, 80)
 jumpBox.PlaceholderText = "50"
-jumpBox.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+jumpBox.BackgroundColor3 = Color3.fromRGB(15, 32, 60)
+jumpBox.BackgroundTransparency = 0.3
 jumpBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 jumpBox.Font = Enum.Font.SourceSans
-jumpBox.TextSize = 14
+jumpBox.TextSize = 18
 jumpBox.Parent = settingsTab
-Instance.new("UICorner", jumpBox).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", jumpBox).CornerRadius = UDim.new(0, 8)
 
 local applyJumpBtn = Instance.new("TextButton")
-applyJumpBtn.Size = UDim2.new(0, 90, 0, 30)
-applyJumpBtn.Position = UDim2.new(0, 200, 0, 55)
+applyJumpBtn.Size = UDim2.new(0, 135, 0, 42)
+applyJumpBtn.Position = UDim2.new(0, 300, 0, 80)
 applyJumpBtn.Text = "Apply Jump"
 applyJumpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 applyJumpBtn.Font = Enum.Font.SourceSansBold
-applyJumpBtn.TextSize = 12
+applyJumpBtn.TextSize = 16
 applyJumpBtn.Parent = settingsTab
-styleButton(applyJumpBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180))
+styleButton(applyJumpBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180), 0.2)
 
 local function updateHumanoidStats()
 	local char = player.Character
@@ -1116,65 +1302,66 @@ end)
 -- [3] TAB VISUAL
 ----------------------------------------------------------
 local antiVisualBtn = Instance.new("TextButton")
-antiVisualBtn.Size = UDim2.new(0, 220, 0, 32)
+antiVisualBtn.Size = UDim2.new(0, 330, 0, 44)
 antiVisualBtn.Text = "Anti-Visual Clear"
 antiVisualBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 antiVisualBtn.Font = Enum.Font.SourceSansBold
-antiVisualBtn.TextSize = 13
+antiVisualBtn.TextSize = 16
 antiVisualBtn.LayoutOrder = 1
-antiVisualBtn.Parent = visualTab
-styleButton(antiVisualBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180))
+antiVisualBtn.Parent = visualScroll
+styleButton(antiVisualBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180), 0.2)
 antiVisualBtn.MouseButton1Click:Connect(function() antiVisual() end)
 
 local antiLagBtn = Instance.new("TextButton")
-antiLagBtn.Size = UDim2.new(0, 220, 0, 32)
+antiLagBtn.Size = UDim2.new(0, 330, 0, 44)
 antiLagBtn.Text = "Anti-Lag Bricks"
 antiLagBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 antiLagBtn.Font = Enum.Font.SourceSansBold
-antiLagBtn.TextSize = 13
+antiLagBtn.TextSize = 16
 antiLagBtn.LayoutOrder = 2
-antiLagBtn.Parent = visualTab
-styleButton(antiLagBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180))
+antiLagBtn.Parent = visualScroll
+styleButton(antiLagBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180), 0.2)
 antiLagBtn.MouseButton1Click:Connect(function() antiLag() end)
 
 local clearFogBtn = Instance.new("TextButton")
-clearFogBtn.Size = UDim2.new(0, 220, 0, 32)
+clearFogBtn.Size = UDim2.new(0, 330, 0, 44)
 clearFogBtn.Text = "Clear Fog"
 clearFogBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 clearFogBtn.Font = Enum.Font.SourceSansBold
-clearFogBtn.TextSize = 13
+clearFogBtn.TextSize = 16
 clearFogBtn.LayoutOrder = 3
-clearFogBtn.Parent = visualTab
-styleButton(clearFogBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180))
+clearFogBtn.Parent = visualScroll
+styleButton(clearFogBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180), 0.2)
 clearFogBtn.MouseButton1Click:Connect(function() clearFog() end)
 
 local uncursedBtn = Instance.new("TextButton")
-uncursedBtn.Size = UDim2.new(0, 220, 0, 32)
+uncursedBtn.Size = UDim2.new(0, 330, 0, 44)
 uncursedBtn.Text = "Uncursed"
 uncursedBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 uncursedBtn.Font = Enum.Font.SourceSansBold
-uncursedBtn.TextSize = 13
+uncursedBtn.TextSize = 16
 uncursedBtn.LayoutOrder = 4
-uncursedBtn.Parent = visualTab
-styleButton(uncursedBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180))
+uncursedBtn.Parent = visualScroll
+styleButton(uncursedBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180), 0.2)
 uncursedBtn.MouseButton1Click:Connect(function() uncursed() end)
 
 ----------------------------------------------------------
--- [4] TAB TCO
+-- [4] TAB TCO (ENLIGHTEN, SPAM ALARM, GRIEF ALARM CLICK DETECTOR)
 ----------------------------------------------------------
-local enlightenAlarmBtn = Instance.new("TextButton", tcoTab)
-enlightenAlarmBtn.Size = UDim2.new(0, 320, 0, 32)
-enlightenAlarmBtn.Position = UDim2.new(0, 12, 0, 12)
+local enlightenAlarmBtn = Instance.new("TextButton", tcoScroll)
+enlightenAlarmBtn.Size = UDim2.new(0, 480, 0, 44)
 enlightenAlarmBtn.Text = "Enlighten Alarm: OFF"
 enlightenAlarmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-enlightenAlarmBtn.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+enlightenAlarmBtn.BackgroundColor3 = Color3.fromRGB(15, 32, 60)
+enlightenAlarmBtn.BackgroundTransparency = 0.35
 enlightenAlarmBtn.Font = Enum.Font.SourceSansBold
-enlightenAlarmBtn.TextSize = 13
+enlightenAlarmBtn.TextSize = 16
+enlightenAlarmBtn.LayoutOrder = 1
 
-Instance.new("UICorner", enlightenAlarmBtn).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", enlightenAlarmBtn).CornerRadius = UDim.new(0, 8)
 local alarmStroke = Instance.new("UIStroke", enlightenAlarmBtn)
 alarmStroke.Color = Color3.fromRGB(255, 50, 50)
-alarmStroke.Thickness = 1
+alarmStroke.Thickness = 1.5
 alarmStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 addClickSound(enlightenAlarmBtn)
 
@@ -1222,19 +1409,20 @@ task.spawn(function()
 	end
 end)
 
-local spamAlarmBtn = Instance.new("TextButton", tcoTab)
-spamAlarmBtn.Size = UDim2.new(0, 320, 0, 32)
-spamAlarmBtn.Position = UDim2.new(0, 12, 0, 52)
+local spamAlarmBtn = Instance.new("TextButton", tcoScroll)
+spamAlarmBtn.Size = UDim2.new(0, 480, 0, 44)
 spamAlarmBtn.Text = "Spam Alarm: OFF"
 spamAlarmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-spamAlarmBtn.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+spamAlarmBtn.BackgroundColor3 = Color3.fromRGB(15, 32, 60)
+spamAlarmBtn.BackgroundTransparency = 0.35
 spamAlarmBtn.Font = Enum.Font.SourceSansBold
-spamAlarmBtn.TextSize = 13
+spamAlarmBtn.TextSize = 16
+spamAlarmBtn.LayoutOrder = 2
 
-Instance.new("UICorner", spamAlarmBtn).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", spamAlarmBtn).CornerRadius = UDim.new(0, 8)
 local spamStroke = Instance.new("UIStroke", spamAlarmBtn)
 spamStroke.Color = Color3.fromRGB(255, 50, 50)
-spamStroke.Thickness = 1
+spamStroke.Thickness = 1.5
 spamStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 addClickSound(spamAlarmBtn)
 
@@ -1286,249 +1474,319 @@ local function monitorPlayerFolder(playerFolder)
 	end)
 end
 
+----------------------------------------------------------
+-- GRIEF ALARM: MULTI-PLAYER CLICK DETECTOR & DELETE LOGIC
+----------------------------------------------------------
+local griefAlarmBtn = Instance.new("TextButton", tcoScroll)
+griefAlarmBtn.Size = UDim2.new(0, 480, 0, 44)
+griefAlarmBtn.Text = "Grief Alarm: OFF"
+griefAlarmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+griefAlarmBtn.BackgroundColor3 = Color3.fromRGB(15, 32, 60)
+griefAlarmBtn.BackgroundTransparency = 0.35
+griefAlarmBtn.Font = Enum.Font.SourceSansBold
+griefAlarmBtn.TextSize = 16
+griefAlarmBtn.LayoutOrder = 3
+
+Instance.new("UICorner", griefAlarmBtn).CornerRadius = UDim.new(0, 8)
+local griefStroke = Instance.new("UIStroke", griefAlarmBtn)
+griefStroke.Color = Color3.fromRGB(255, 50, 50)
+griefStroke.Thickness = 1.5
+griefStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+addClickSound(griefAlarmBtn)
+
+local griefAlarmEnabled = false
+local lastGriefWarning = {}
+local activeClickDetectors = {}
+
+local function setGriefAlarm(state)
+	griefAlarmEnabled = state
+	if griefAlarmEnabled then
+		griefAlarmBtn.Text = "Grief Alarm: ON"
+		griefStroke.Color = Color3.fromRGB(0, 255, 100)
+		sendBlueChatMessage("[TACHYON] Grief Alarm Activated (Click Detector Mode) ✅")
+	else
+		griefAlarmBtn.Text = "Grief Alarm: OFF"
+		griefStroke.Color = Color3.fromRGB(255, 50, 50)
+		sendBlueChatMessage("[TACHYON] Grief Alarm Deactivated ❌")
+	end
+end
+
+griefAlarmBtn.MouseButton1Click:Connect(function()
+	setGriefAlarm(not griefAlarmEnabled)
+end)
+
+local function triggerGriefAlert(attacker, victimOwnerName)
+	if attacker.Name == victimOwnerName then return end
+	local now = tick()
+	local lastWarn = lastGriefWarning[attacker.Name] or 0
+	if now - lastWarn >= 3.0 then
+		lastGriefWarning[attacker.Name] = now
+		executePublicChat("warning " .. attacker.Name .. " is detected deleting people building 🚨🚨")
+	end
+end
+
+local function identifyTrueDeleter(brickPosition, victimOwnerName)
+	local closestPlayer = nil
+	local shortestDist = 45
+
+	for _, p in ipairs(Players:GetPlayers()) do
+		if p ~= player and p.Name ~= victimOwnerName then
+			local char = p.Character
+			if char and char:FindFirstChild("Delete") then
+				local hrp = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso")
+				if hrp then
+					local dist = (hrp.Position - brickPosition).Magnitude
+					local toBrick = (brickPosition - hrp.Position).Unit
+					local dot = hrp.CFrame.LookVector:Dot(toBrick)
+
+					if dist < shortestDist and dot > 0.15 then
+						shortestDist = dist
+						closestPlayer = p
+					end
+				end
+			end
+		end
+	end
+
+	return closestPlayer
+end
+
+local function attachClickDetectorToBrick(brick, ownerFolder)
+	if not brick:IsA("BasePart") or activeClickDetectors[brick] then return end
+	activeClickDetectors[brick] = true
+
+	local cd = Instance.new("ClickDetector")
+	cd.MaxActivationDistance = 45
+	cd.Parent = brick
+
+	cd.MouseClick:Connect(function(clickingPlayer)
+		if not griefAlarmEnabled then return end
+		if clickingPlayer ~= player and clickingPlayer.Name ~= ownerFolder.Name then
+			local char = clickingPlayer.Character
+			if char and char:FindFirstChild("Delete") then
+				triggerGriefAlert(clickingPlayer, ownerFolder.Name)
+			end
+		end
+	end)
+
+	brick.AncestryChanged:Connect(function(_, newParent)
+		if not newParent and griefAlarmEnabled then
+			local trueCulprit = identifyTrueDeleter(brick.Position, ownerFolder.Name)
+			if trueCulprit then
+				triggerGriefAlert(trueCulprit, ownerFolder.Name)
+			end
+		end
+	end)
+end
+
+local function monitorBricksFolder(pFolder)
+	for _, child in ipairs(pFolder:GetChildren()) do
+		attachClickDetectorToBrick(child, pFolder)
+	end
+	pFolder.ChildAdded:Connect(function(child)
+		attachClickDetectorToBrick(child, pFolder)
+	end)
+end
+
 local bricksFolder = workspace:FindFirstChild("Bricks")
 if bricksFolder then
 	for _, pf in ipairs(bricksFolder:GetChildren()) do
 		if pf:IsA("Folder") or pf:IsA("Model") then
 			monitorPlayerFolder(pf)
+			monitorBricksFolder(pf)
 		end
 	end
 	bricksFolder.ChildAdded:Connect(function(newPf)
 		if newPf:IsA("Folder") or newPf:IsA("Model") then
 			monitorPlayerFolder(newPf)
+			monitorBricksFolder(newPf)
 		end
 	end)
 end
 
-local tcoInfoLabel = Instance.new("TextLabel", tcoTab)
-tcoInfoLabel.Size = UDim2.new(0, 320, 0, 24)
-tcoInfoLabel.Position = UDim2.new(0, 12, 0, 92)
+local tcoInfoLabel = Instance.new("TextLabel", tcoScroll)
+tcoInfoLabel.Size = UDim2.new(0, 480, 0, 32)
 tcoInfoLabel.Text = "👉 green = active | red = alarm 🚨"
 tcoInfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 tcoInfoLabel.BackgroundTransparency = 1
 tcoInfoLabel.Font = Enum.Font.SourceSansBold
-tcoInfoLabel.TextSize = 13
+tcoInfoLabel.TextSize = 16
 tcoInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
+tcoInfoLabel.LayoutOrder = 4
 
-local openMusicModalBtn = Instance.new("TextButton", tcoTab)
-openMusicModalBtn.Size = UDim2.new(0, 85, 0, 28)
-openMusicModalBtn.Position = UDim2.new(1, -95, 1, -38)
+local openMusicModalBtn = Instance.new("TextButton", tcoScroll)
+openMusicModalBtn.Size = UDim2.new(0, 130, 0, 40)
 openMusicModalBtn.Text = "🎵 Music"
 openMusicModalBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 openMusicModalBtn.Font = Enum.Font.SourceSansBold
-openMusicModalBtn.TextSize = 12
-styleButton(openMusicModalBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180))
+openMusicModalBtn.TextSize = 15
+openMusicModalBtn.LayoutOrder = 5
+styleButton(openMusicModalBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180), 0.2)
 
 ----------------------------------------------------------
 -- MUSIC MODAL
 ----------------------------------------------------------
 local musicModal = Instance.new("Frame", main)
 musicModal.Name = "TachyonMusicModal"
-musicModal.Size = UDim2.new(1, -110, 1, -30)
-musicModal.Position = UDim2.new(0, 110, 0, 30)
-musicModal.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
+musicModal.Size = UDim2.new(1, -165, 1, -42)
+musicModal.Position = UDim2.new(0, 165, 0, 42)
+musicModal.BackgroundColor3 = Color3.fromRGB(10, 20, 40)
+musicModal.BackgroundTransparency = 0.15
 musicModal.Visible = false
 musicModal.ZIndex = 50
 
 local modalTitle = Instance.new("TextLabel", musicModal)
-modalTitle.Size = UDim2.new(1, -80, 0, 30)
-modalTitle.Position = UDim2.new(0, 15, 0, 8)
+modalTitle.Size = UDim2.new(1, -120, 0, 40)
+modalTitle.Position = UDim2.new(0, 20, 0, 12)
 modalTitle.Text = "🎵 Music Player Full Content"
 modalTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 modalTitle.Font = Enum.Font.SourceSansBold
-modalTitle.TextSize = 15
+modalTitle.TextSize = 18
 modalTitle.BackgroundTransparency = 1
 modalTitle.TextXAlignment = Enum.TextXAlignment.Left
 modalTitle.ZIndex = 51
 
 local backMusicBtn = Instance.new("TextButton", musicModal)
-backMusicBtn.Size = UDim2.new(0, 60, 0, 28)
-backMusicBtn.Position = UDim2.new(1, -70, 1, -38)
+backMusicBtn.Size = UDim2.new(0, 90, 0, 40)
+backMusicBtn.Position = UDim2.new(1, -105, 1, -55)
 backMusicBtn.Text = "< Back"
 backMusicBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 backMusicBtn.Font = Enum.Font.SourceSansBold
-backMusicBtn.TextSize = 13
+backMusicBtn.TextSize = 16
 backMusicBtn.ZIndex = 51
-styleButton(backMusicBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+styleButton(backMusicBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
 
 local openBotChatBtn = Instance.new("TextButton", musicModal)
-openBotChatBtn.Size = UDim2.new(0, 85, 0, 28)
-openBotChatBtn.Position = UDim2.new(1, -165, 1, -38)
+openBotChatBtn.Size = UDim2.new(0, 130, 0, 40)
+openBotChatBtn.Position = UDim2.new(1, -250, 1, -55)
 openBotChatBtn.Text = "💬 Bot Chat"
 openBotChatBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 openBotChatBtn.Font = Enum.Font.SourceSansBold
-openBotChatBtn.TextSize = 12
+openBotChatBtn.TextSize = 15
 openBotChatBtn.ZIndex = 51
-styleButton(openBotChatBtn, Color3.fromRGB(180, 0, 180), Color3.fromRGB(100, 0, 100))
+styleButton(openBotChatBtn, Color3.fromRGB(180, 0, 180), Color3.fromRGB(100, 0, 100), 0.2)
 
 local infoMusicLabel = Instance.new("TextLabel", musicModal)
-infoMusicLabel.Size = UDim2.new(1, -30, 0, 20)
-infoMusicLabel.Position = UDim2.new(0, 15, 0, 38)
+infoMusicLabel.Size = UDim2.new(1, -40, 0, 30)
+infoMusicLabel.Position = UDim2.new(0, 20, 0, 52)
 infoMusicLabel.Text = "Music Player Active (Full Right Content View)"
-infoMusicLabel.TextColor3 = Color3.fromRGB(180, 180, 190)
+infoMusicLabel.TextColor3 = Color3.fromRGB(180, 205, 240)
 infoMusicLabel.BackgroundTransparency = 1
 infoMusicLabel.Font = Enum.Font.SourceSans
-infoMusicLabel.TextSize = 13
+infoMusicLabel.TextSize = 16
 infoMusicLabel.TextXAlignment = Enum.TextXAlignment.Left
 infoMusicLabel.ZIndex = 51
 
-local shadyGrayBtn = Instance.new("TextButton", musicModal)
-shadyGrayBtn.Size = UDim2.new(0, 200, 0, 28)
-shadyGrayBtn.Position = UDim2.new(0, 15, 0, 65)
-shadyGrayBtn.Text = "shady gray"
-shadyGrayBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-shadyGrayBtn.Font = Enum.Font.SourceSansBold
-shadyGrayBtn.TextSize = 13
-shadyGrayBtn.ZIndex = 51
-styleButton(shadyGrayBtn, Color3.fromRGB(60, 60, 70), Color3.fromRGB(40, 40, 50))
+local function createMusicEntry(titleName, assetId, yOffset)
+	local btn = Instance.new("TextButton", musicModal)
+	btn.Size = UDim2.new(0, 300, 0, 38)
+	btn.Position = UDim2.new(0, 20, 0, yOffset)
+	btn.Text = titleName
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	btn.Font = Enum.Font.SourceSansBold
+	btn.TextSize = 16
+	btn.ZIndex = 51
+	styleButton(btn, Color3.fromRGB(25, 50, 85), Color3.fromRGB(15, 30, 60), 0.3)
+	btn.MouseButton1Click:Connect(function()
+		pcall(function() setclipboard(assetId) end)
+		sendBlueChatMessage("[TACHYON] Copied " .. titleName .. " ID: " .. assetId .. " 📋")
+	end)
+end
 
-shadyGrayBtn.MouseButton1Click:Connect(function()
-	local targetNumber = "125311992018245"
-	pcall(function() setclipboard(targetNumber) end)
-	sendBlueChatMessage("[TACHYON] Copied Shady Gray ID: " .. targetNumber .. " 📋")
-end)
+createMusicEntry("shady gray", "125311992018245", 90)
+createMusicEntry("judas", "118314578679702", 136)
+createMusicEntry("rthro", "45819151", 182)
+createMusicEntry("admiring you", "136208016606825", 228)
 
-local judasBtn = Instance.new("TextButton", musicModal)
-judasBtn.Size = UDim2.new(0, 200, 0, 28)
-judasBtn.Position = UDim2.new(0, 15, 0, 98)
-judasBtn.Text = "judas"
-judasBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-judasBtn.Font = Enum.Font.SourceSansBold
-judasBtn.TextSize = 13
-judasBtn.ZIndex = 51
-styleButton(judasBtn, Color3.fromRGB(60, 60, 70), Color3.fromRGB(40, 40, 50))
-
-judasBtn.MouseButton1Click:Connect(function()
-	local targetNumber = "118314578679702"
-	pcall(function() setclipboard(targetNumber) end)
-	sendBlueChatMessage("[TACHYON] Copied Judas ID: " .. targetNumber .. " 📋")
-end)
-
-local rthroBtn = Instance.new("TextButton", musicModal)
-rthroBtn.Size = UDim2.new(0, 200, 0, 28)
-rthroBtn.Position = UDim2.new(0, 15, 0, 131)
-rthroBtn.Text = "rthro"
-rthroBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-rthroBtn.Font = Enum.Font.SourceSansBold
-rthroBtn.TextSize = 13
-rthroBtn.ZIndex = 51
-styleButton(rthroBtn, Color3.fromRGB(60, 60, 70), Color3.fromRGB(40, 40, 50))
-
-rthroBtn.MouseButton1Click:Connect(function()
-	local targetNumber = "45819151"
-	pcall(function() setclipboard(targetNumber) end)
-	sendBlueChatMessage("[TACHYON] Copied Rthro ID: " .. targetNumber .. " 📋")
-end)
-
-local admiringYouBtn = Instance.new("TextButton", musicModal)
-admiringYouBtn.Size = UDim2.new(0, 200, 0, 28)
-admiringYouBtn.Position = UDim2.new(0, 15, 0, 164)
-admiringYouBtn.Text = "admiring you"
-admiringYouBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-admiringYouBtn.Font = Enum.Font.SourceSansBold
-admiringYouBtn.TextSize = 13
-admiringYouBtn.ZIndex = 51
-styleButton(admiringYouBtn, Color3.fromRGB(60, 60, 70), Color3.fromRGB(40, 40, 50))
-
-admiringYouBtn.MouseButton1Click:Connect(function()
-	local targetNumber = "136208016606825"
-	pcall(function() setclipboard(targetNumber) end)
-	sendBlueChatMessage("[TACHYON] Copied Admiring You ID: " .. targetNumber .. " 📋")
-end)
-
-openMusicModalBtn.MouseButton1Click:Connect(function()
-	musicModal.Visible = true
-end)
-
-backMusicBtn.MouseButton1Click:Connect(function()
-	musicModal.Visible = false
-end)
+openMusicModalBtn.MouseButton1Click:Connect(function() musicModal.Visible = true end)
+backMusicBtn.MouseButton1Click:Connect(function() musicModal.Visible = false end)
 
 ----------------------------------------------------------
 -- BOT CHAT MODAL
 ----------------------------------------------------------
 local botChatModal = Instance.new("Frame", main)
 botChatModal.Name = "TachyonBotChatModal"
-botChatModal.Size = UDim2.new(1, -110, 1, -30)
-botChatModal.Position = UDim2.new(0, 110, 0, 30)
-botChatModal.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
+botChatModal.Size = UDim2.new(1, -165, 1, -42)
+botChatModal.Position = UDim2.new(0, 165, 0, 42)
+botChatModal.BackgroundColor3 = Color3.fromRGB(10, 20, 40)
+botChatModal.BackgroundTransparency = 0.15
 botChatModal.Visible = false
 botChatModal.ZIndex = 60
 
 local botChatModalTitle = Instance.new("TextLabel", botChatModal)
-botChatModalTitle.Size = UDim2.new(1, -80, 0, 30)
-botChatModalTitle.Position = UDim2.new(0, 15, 0, 8)
+botChatModalTitle.Size = UDim2.new(1, -120, 0, 40)
+botChatModalTitle.Position = UDim2.new(0, 20, 0, 12)
 botChatModalTitle.Text = "💬 Bot Chat Panel Content"
 botChatModalTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 botChatModalTitle.Font = Enum.Font.SourceSansBold
-botChatModalTitle.TextSize = 15
+botChatModalTitle.TextSize = 18
 botChatModalTitle.BackgroundTransparency = 1
 botChatModalTitle.TextXAlignment = Enum.TextXAlignment.Left
 botChatModalTitle.ZIndex = 61
 
 local backBotChatBtn = Instance.new("TextButton", botChatModal)
-backBotChatBtn.Size = UDim2.new(0, 60, 0, 28)
-backBotChatBtn.Position = UDim2.new(1, -70, 1, -38)
+backBotChatBtn.Size = UDim2.new(0, 90, 0, 40)
+backBotChatBtn.Position = UDim2.new(1, -105, 1, -55)
 backBotChatBtn.Text = "< Back"
 backBotChatBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 backBotChatBtn.Font = Enum.Font.SourceSansBold
-backBotChatBtn.TextSize = 13
+backBotChatBtn.TextSize = 16
 backBotChatBtn.ZIndex = 61
-styleButton(backBotChatBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+styleButton(backBotChatBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
 
 local msgBox = Instance.new("TextBox", botChatModal)
-msgBox.Size = UDim2.new(0, 320, 0, 32)
-msgBox.Position = UDim2.new(0, 15, 0, 42)
+msgBox.Size = UDim2.new(0, 480, 0, 44)
+msgBox.Position = UDim2.new(0, 20, 0, 58)
 msgBox.PlaceholderText = "Tulis Pesan Bot Chat..."
 msgBox.Text = "Hello its me bot!!, im your assistant i will help you everytime!! 🤝🤝"
-msgBox.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+msgBox.BackgroundColor3 = Color3.fromRGB(15, 32, 60)
+msgBox.BackgroundTransparency = 0.3
 msgBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 msgBox.Font = Enum.Font.SourceSans
-msgBox.TextSize = 13
+msgBox.TextSize = 16
 msgBox.ZIndex = 61
-Instance.new("UICorner", msgBox).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", msgBox).CornerRadius = UDim.new(0, 8)
 
 local sendChatBtn = Instance.new("TextButton", botChatModal)
-sendChatBtn.Size = UDim2.new(0, 320, 0, 28)
-sendChatBtn.Position = UDim2.new(0, 15, 0, 78)
+sendChatBtn.Size = UDim2.new(0, 480, 0, 40)
+sendChatBtn.Position = UDim2.new(0, 20, 0, 110)
 sendChatBtn.Text = "Send Chat"
 sendChatBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 sendChatBtn.Font = Enum.Font.SourceSansBold
-sendChatBtn.TextSize = 13
+sendChatBtn.TextSize = 16
 sendChatBtn.ZIndex = 61
-styleButton(sendChatBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60))
+styleButton(sendChatBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60), 0.2)
 
 sendChatBtn.MouseButton1Click:Connect(function()
-	if msgBox.Text ~= "" then
-		executePublicChat(msgBox.Text)
-	end
+	if msgBox.Text ~= "" then executePublicChat(msgBox.Text) end
 end)
 
 local sendHelloBtn = Instance.new("TextButton", botChatModal)
-sendHelloBtn.Size = UDim2.new(0, 320, 0, 28)
-sendHelloBtn.Position = UDim2.new(0, 15, 0, 110)
+sendHelloBtn.Size = UDim2.new(0, 480, 0, 40)
+sendHelloBtn.Position = UDim2.new(0, 20, 0, 158)
 sendHelloBtn.Text = "ohh hello!!, how are you buddy?? 😃😃"
 sendHelloBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 sendHelloBtn.Font = Enum.Font.SourceSansBold
-sendHelloBtn.TextSize = 12
+sendHelloBtn.TextSize = 15
 sendHelloBtn.ZIndex = 61
-styleButton(sendHelloBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180))
+styleButton(sendHelloBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180), 0.2)
 
 sendHelloBtn.MouseButton1Click:Connect(function()
 	executePublicChat("ohh hello!!, how are you buddy?? 😃😃")
 end)
 
 local autoBotChatBtn = Instance.new("TextButton", botChatModal)
-autoBotChatBtn.Size = UDim2.new(0, 320, 0, 30)
-autoBotChatBtn.Position = UDim2.new(0, 15, 0, 148)
+autoBotChatBtn.Size = UDim2.new(0, 480, 0, 42)
+autoBotChatBtn.Position = UDim2.new(0, 20, 0, 208)
 autoBotChatBtn.Text = "Auto Bot Chat: OFF"
 autoBotChatBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-autoBotChatBtn.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+autoBotChatBtn.BackgroundColor3 = Color3.fromRGB(15, 32, 60)
+autoBotChatBtn.BackgroundTransparency = 0.35
 autoBotChatBtn.Font = Enum.Font.SourceSansBold
-autoBotChatBtn.TextSize = 13
+autoBotChatBtn.TextSize = 16
 autoBotChatBtn.ZIndex = 61
 
-Instance.new("UICorner", autoBotChatBtn).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", autoBotChatBtn).CornerRadius = UDim.new(0, 8)
 local autoBotStroke = Instance.new("UIStroke", autoBotChatBtn)
 autoBotStroke.Color = Color3.fromRGB(255, 50, 50)
 autoBotStroke.Thickness = 1.5
@@ -1582,35 +1840,27 @@ local function setupPlayerJoin(p)
 	end
 end
 
-for _, p in ipairs(Players:GetPlayers()) do
-	setupChatListener(p)
-end
-
+for _, p in ipairs(Players:GetPlayers()) do setupChatListener(p) end
 Players.PlayerAdded:Connect(function(newP)
 	setupChatListener(newP)
 	setupPlayerJoin(newP)
 end)
 
-openBotChatBtn.MouseButton1Click:Connect(function()
-	botChatModal.Visible = true
-end)
-
-backBotChatBtn.MouseButton1Click:Connect(function()
-	botChatModal.Visible = false
-end)
+openBotChatBtn.MouseButton1Click:Connect(function() botChatModal.Visible = true end)
+backBotChatBtn.MouseButton1Click:Connect(function() botChatModal.Visible = false end)
 
 ----------------------------------------------------------
 -- [5] TAB TROLL
 ----------------------------------------------------------
 local flingBtn = Instance.new("TextButton")
-flingBtn.Size = UDim2.new(0, 220, 0, 32)
+flingBtn.Size = UDim2.new(0, 330, 0, 44)
 flingBtn.Text = "Fling Touch: OFF"
 flingBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 flingBtn.Font = Enum.Font.SourceSansBold
-flingBtn.TextSize = 13
+flingBtn.TextSize = 16
 flingBtn.LayoutOrder = 1
-flingBtn.Parent = trollTab
-styleButton(flingBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+flingBtn.Parent = trollScroll
+styleButton(flingBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
 
 local hiddenfling = false
 local function flingProcess()
@@ -1635,23 +1885,23 @@ flingBtn.MouseButton1Click:Connect(function()
 	hiddenfling = not hiddenfling
 	if hiddenfling then
 		flingBtn.Text = "Fling Touch: ON"
-		styleButton(flingBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60))
+		styleButton(flingBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60), 0.2)
 		task.spawn(flingProcess)
 	else
 		flingBtn.Text = "Fling Touch: OFF"
-		styleButton(flingBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+		styleButton(flingBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
 	end
 end)
 
 local delCubesBtn = Instance.new("TextButton")
-delCubesBtn.Size = UDim2.new(0, 220, 0, 32)
+delCubesBtn.Size = UDim2.new(0, 330, 0, 44)
 delCubesBtn.Text = "DelCubes"
 delCubesBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 delCubesBtn.Font = Enum.Font.SourceSansBold
-delCubesBtn.TextSize = 13
+delCubesBtn.TextSize = 16
 delCubesBtn.LayoutOrder = 2
-delCubesBtn.Parent = trollTab
-styleButton(delCubesBtn, Color3.fromRGB(220, 50, 50), Color3.fromRGB(150, 30, 30))
+delCubesBtn.Parent = trollScroll
+styleButton(delCubesBtn, Color3.fromRGB(220, 50, 50), Color3.fromRGB(150, 30, 30), 0.2)
 
 delCubesBtn.MouseButton1Click:Connect(function()
 	local char = player.Character
@@ -1665,10 +1915,10 @@ delCubesBtn.MouseButton1Click:Connect(function()
 	end
 	
 	local remoteEvent = player:FindFirstChild("Event")
-	local bricksFolder = workspace:FindFirstChild("Bricks")
-	if bricksFolder and remoteEvent then
+	local bFolder = workspace:FindFirstChild("Bricks")
+	if bFolder and remoteEvent then
 		local count = 0
-		for _, playerFolder in ipairs(bricksFolder:GetChildren()) do
+		for _, playerFolder in ipairs(bFolder:GetChildren()) do
 			if playerFolder.Name ~= player.Name then
 				for _, brick in ipairs(playerFolder:GetChildren()) do
 					if brick:IsA("BasePart") then
@@ -1690,116 +1940,137 @@ end)
 ----------------------------------------------------------
 -- [6] TAB MISC
 ----------------------------------------------------------
+local fullBrightBtn = Instance.new("TextButton")
+fullBrightBtn.Size = UDim2.new(0, 330, 0, 44)
+fullBrightBtn.Text = "FullBright: OFF"
+fullBrightBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+fullBrightBtn.Font = Enum.Font.SourceSansBold
+fullBrightBtn.TextSize = 16
+fullBrightBtn.LayoutOrder = 1
+fullBrightBtn.Parent = miscScroll
+styleButton(fullBrightBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
+
+fullBrightBtn.MouseButton1Click:Connect(function()
+	setFullBright(not fullBrightEnabled)
+	if fullBrightEnabled then
+		fullBrightBtn.Text = "FullBright: ON"
+		styleButton(fullBrightBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60), 0.2)
+	else
+		fullBrightBtn.Text = "FullBright: OFF"
+		styleButton(fullBrightBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
+	end
+end)
+
 local antiDragBtn = Instance.new("TextButton")
-antiDragBtn.Size = UDim2.new(0, 220, 0, 32)
+antiDragBtn.Size = UDim2.new(0, 330, 0, 44)
 antiDragBtn.Text = "Anti Drag: OFF"
 antiDragBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 antiDragBtn.Font = Enum.Font.SourceSansBold
-antiDragBtn.TextSize = 13
-antiDragBtn.LayoutOrder = 1
-antiDragBtn.Parent = miscTab
-styleButton(antiDragBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+antiDragBtn.TextSize = 16
+antiDragBtn.LayoutOrder = 2
+antiDragBtn.Parent = miscScroll
+styleButton(antiDragBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
 
 antiDragBtn.MouseButton1Click:Connect(function()
 	antiDragEnabled = not antiDragEnabled
 	if antiDragEnabled then
 		StartAntiDrag()
 		antiDragBtn.Text = "Anti Drag: ON"
-		styleButton(antiDragBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60))
+		styleButton(antiDragBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60), 0.2)
 	else
 		StopAntiDrag()
 		antiDragBtn.Text = "Anti Drag: OFF"
-		styleButton(antiDragBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+		styleButton(antiDragBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
 	end
 end)
 
 local autoGrabBtn = Instance.new("TextButton")
-autoGrabBtn.Size = UDim2.new(0, 220, 0, 32)
+autoGrabBtn.Size = UDim2.new(0, 330, 0, 44)
 autoGrabBtn.Text = "Auto Grab Tools: OFF"
 autoGrabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 autoGrabBtn.Font = Enum.Font.SourceSansBold
-autoGrabBtn.TextSize = 13
-autoGrabBtn.LayoutOrder = 2
-autoGrabBtn.Parent = miscTab
-styleButton(autoGrabBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+autoGrabBtn.TextSize = 16
+autoGrabBtn.LayoutOrder = 3
+autoGrabBtn.Parent = miscScroll
+styleButton(autoGrabBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
 
 autoGrabBtn.MouseButton1Click:Connect(function()
 	if autoGrabEnabled then
 		stopAutoGrab()
 		autoGrabBtn.Text = "Auto Grab Tools: OFF"
-		styleButton(autoGrabBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+		styleButton(autoGrabBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
 	else
 		startAutoGrab()
 		autoGrabBtn.Text = "Auto Grab Tools: ON"
-		styleButton(autoGrabBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60))
+		styleButton(autoGrabBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60), 0.2)
 	end
 end)
 
 local antiVampBtn = Instance.new("TextButton")
-antiVampBtn.Size = UDim2.new(0, 220, 0, 32)
+antiVampBtn.Size = UDim2.new(0, 330, 0, 44)
 antiVampBtn.Text = "Fix Anti-Vamp"
 antiVampBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 antiVampBtn.Font = Enum.Font.SourceSansBold
-antiVampBtn.TextSize = 13
-antiVampBtn.LayoutOrder = 3
-antiVampBtn.Parent = miscTab
-styleButton(antiVampBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180))
+antiVampBtn.TextSize = 16
+antiVampBtn.LayoutOrder = 4
+antiVampBtn.Parent = miscScroll
+styleButton(antiVampBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180), 0.2)
 antiVampBtn.MouseButton1Click:Connect(function() antiVamp() end)
 
 local disarmDeathBtn = Instance.new("TextButton")
-disarmDeathBtn.Size = UDim2.new(0, 220, 0, 32)
+disarmDeathBtn.Size = UDim2.new(0, 330, 0, 44)
 disarmDeathBtn.Text = "Disarm Death: OFF"
 disarmDeathBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 disarmDeathBtn.Font = Enum.Font.SourceSansBold
-disarmDeathBtn.TextSize = 13
-disarmDeathBtn.LayoutOrder = 4
-disarmDeathBtn.Parent = miscTab
-styleButton(disarmDeathBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+disarmDeathBtn.TextSize = 16
+disarmDeathBtn.LayoutOrder = 5
+disarmDeathBtn.Parent = miscScroll
+styleButton(disarmDeathBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
 
 disarmDeathBtn.MouseButton1Click:Connect(function()
 	disarmDeathEnabled = not disarmDeathEnabled
 	if disarmDeathEnabled then
 		disarmDeathBtn.Text = "Disarm Death: ON"
-		styleButton(disarmDeathBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60))
+		styleButton(disarmDeathBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60), 0.2)
 		sendBlueChatMessage("[TACHYON] Disarm Death Activated ✅")
 	else
 		disarmDeathBtn.Text = "Disarm Death: OFF"
-		styleButton(disarmDeathBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+		styleButton(disarmDeathBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
 		sendBlueChatMessage("[TACHYON] Disarm Death Deactivated ❌")
 	end
 end)
 
 local antiMaptideBtn = Instance.new("TextButton")
-antiMaptideBtn.Size = UDim2.new(0, 220, 0, 32)
+antiMaptideBtn.Size = UDim2.new(0, 330, 0, 44)
 antiMaptideBtn.Text = "Anti MaptideNan: OFF"
 antiMaptideBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 antiMaptideBtn.Font = Enum.Font.SourceSansBold
-antiMaptideBtn.TextSize = 13
-antiMaptideBtn.LayoutOrder = 5
-antiMaptideBtn.Parent = miscTab
-styleButton(antiMaptideBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+antiMaptideBtn.TextSize = 16
+antiMaptideBtn.LayoutOrder = 6
+antiMaptideBtn.Parent = miscScroll
+styleButton(antiMaptideBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
 
 antiMaptideBtn.MouseButton1Click:Connect(function()
 	antiMaptideEnabled = not antiMaptideEnabled
 	setAntiMaptide(antiMaptideEnabled)
 	if antiMaptideEnabled then
 		antiMaptideBtn.Text = "Anti MaptideNan: ON"
-		styleButton(antiMaptideBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60))
+		styleButton(antiMaptideBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60), 0.2)
 	else
 		antiMaptideBtn.Text = "Anti MaptideNan: OFF"
-		styleButton(antiMaptideBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+		styleButton(antiMaptideBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
 	end
 end)
 
 local toSpawnBtn = Instance.new("TextButton")
-toSpawnBtn.Size = UDim2.new(0, 220, 0, 32)
+toSpawnBtn.Size = UDim2.new(0, 330, 0, 44)
 toSpawnBtn.Text = "ToSpawn"
 toSpawnBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 toSpawnBtn.Font = Enum.Font.SourceSansBold
-toSpawnBtn.TextSize = 13
-toSpawnBtn.LayoutOrder = 6
-toSpawnBtn.Parent = miscTab
-styleButton(toSpawnBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180))
+toSpawnBtn.TextSize = 16
+toSpawnBtn.LayoutOrder = 7
+toSpawnBtn.Parent = miscScroll
+styleButton(toSpawnBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180), 0.2)
 toSpawnBtn.MouseButton1Click:Connect(function() teleportToSpawn() end)
 
 ----------------------------------------------------------
@@ -1852,7 +2123,6 @@ local function startFly()
 		local cam = workspace.CurrentCamera
 		flyBodyGyro.cframe = cam.CFrame
 		
-		-- Kalkulasi pergerakan 3D mengikuti arah kamera secara penuh (termasuk atas/bawah)
 		local flatRight = cam.CFrame.RightVector
 		local flatLook = Vector3.new(0, 1, 0):Cross(flatRight).Unit
 		
@@ -1869,21 +2139,36 @@ end
 ----------------------------------------------------------
 -- CHAT COMMAND SYSTEM
 ----------------------------------------------------------
+local targetLoopSpeed = 16
+local loopSpeedActive = false
+
 player.Chatted:Connect(function(msg)
 	local args = string.split(msg, " ")
 	local cmd = string.lower(args[1])
 
-	if cmd == ":antigrab" or cmd == ":antidrag" then
+	if cmd == ":griefalarm" then
+		setGriefAlarm(true)
+	elseif cmd == ":ungriefalarm" then
+		setGriefAlarm(false)
+	elseif cmd == ":fullbright" or cmd == ":bright" then
+		setFullBright(true)
+		fullBrightBtn.Text = "FullBright: ON"
+		styleButton(fullBrightBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60), 0.2)
+	elseif cmd == ":unfullbright" or cmd == ":unbright" then
+		setFullBright(false)
+		fullBrightBtn.Text = "FullBright: OFF"
+		styleButton(fullBrightBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
+	elseif cmd == ":antigrab" or cmd == ":antidrag" then
 		antiDragEnabled = true
 		StartAntiDrag()
 		antiDragBtn.Text = "Anti Drag: ON"
-		styleButton(antiDragBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60))
+		styleButton(antiDragBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60), 0.2)
 		sendBlueChatMessage("[TACHYON] Anti-Drag Activated ✅")
 	elseif cmd == ":unantigrab" or cmd == ":unantidrag" then
 		antiDragEnabled = false
 		StopAntiDrag()
 		antiDragBtn.Text = "Anti Drag: OFF"
-		styleButton(antiDragBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+		styleButton(antiDragBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
 		sendBlueChatMessage("[TACHYON] Anti-Drag Deactivated ❌")
 	elseif cmd == ":antifling" then
 		toggleAntiFling(true)
@@ -1903,11 +2188,11 @@ player.Chatted:Connect(function(msg)
 	elseif cmd == ":autograb" then
 		startAutoGrab()
 		autoGrabBtn.Text = "Auto Grab Tools: ON"
-		styleButton(autoGrabBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60))
+		styleButton(autoGrabBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60), 0.2)
 	elseif cmd == ":stopgrab" then
 		stopAutoGrab()
 		autoGrabBtn.Text = "Auto Grab Tools: OFF"
-		styleButton(autoGrabBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+		styleButton(autoGrabBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
 	elseif cmd == ":antivisual" then
 		antiVisual()
 	elseif cmd == ":clearfog" then
@@ -1919,11 +2204,11 @@ player.Chatted:Connect(function(msg)
 	elseif cmd == ":antimaptide" then
 		setAntiMaptide(true)
 		antiMaptideBtn.Text = "Anti MaptideNan: ON"
-		styleButton(antiMaptideBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60))
+		styleButton(antiMaptideBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60), 0.2)
 	elseif cmd == ":unantimaptide" then
 		setAntiMaptide(false)
 		antiMaptideBtn.Text = "Anti MaptideNan: OFF"
-		styleButton(antiMaptideBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+		styleButton(antiMaptideBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
 	elseif cmd == ":enlightenalarm" then
 		enlightenAlarmEnabled = true
 		enlightenAlarmBtn.Text = "Enlighten Alarm: ON"
@@ -1942,17 +2227,17 @@ player.Chatted:Connect(function(msg)
 	elseif cmd == ":unspamalarm" then
 		spamAlarmEnabled = false
 		spamAlarmBtn.Text = "Spam Alarm: OFF"
-		styleButton(spamAlarmBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+		styleButton(spamAlarmBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
 		sendBlueChatMessage("[TACHYON] Spam Alarm Deactivated ❌")
 	elseif cmd == ":disarmdeath" then
 		disarmDeathEnabled = true
 		disarmDeathBtn.Text = "Disarm Death: ON"
-		styleButton(disarmDeathBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60))
+		styleButton(disarmDeathBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60), 0.2)
 		sendBlueChatMessage("[TACHYON] Disarm Death Activated ✅")
 	elseif cmd == ":undisarmdeath" then
 		disarmDeathEnabled = false
 		disarmDeathBtn.Text = "Disarm Death: OFF"
-		styleButton(disarmDeathBtn, Color3.fromRGB(50, 50, 60), Color3.fromRGB(30, 30, 40))
+		styleButton(disarmDeathBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
 		sendBlueChatMessage("[TACHYON] Disarm Death Deactivated ❌")
 	elseif cmd == ":delcubes" then
 		local char = player.Character
@@ -1963,9 +2248,9 @@ player.Chatted:Connect(function(msg)
 			task.wait(0.1)
 		end
 		local remoteEvent = player:FindFirstChild("Event")
-		local bricksFolder = workspace:FindFirstChild("Bricks")
-		if bricksFolder and remoteEvent then
-			for _, playerFolder in ipairs(bricksFolder:GetChildren()) do
+		local bFolder = workspace:FindFirstChild("Bricks")
+		if bFolder and remoteEvent then
+			for _, playerFolder in ipairs(bFolder:GetChildren()) do
 				if playerFolder.Name ~= player.Name then
 					for _, brick in ipairs(playerFolder:GetChildren()) do
 						if brick:IsA("BasePart") then
@@ -1979,7 +2264,8 @@ player.Chatted:Connect(function(msg)
 		end
 		sendBlueChatMessage("[TACHYON] DelCubes executed via chat! 🗑️")
 	elseif cmd == ":reset" then
-		loadstring([[game.Players.LocalPlayer.Character.Humanoid.Health = 0]])()
+		local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if hum then hum.Health = 0 end
 		sendBlueChatMessage("[TACHYON] Character Reset! 💀")
 	elseif cmd == ":fly" then
 		startFly()
