@@ -1,5 +1,5 @@
---// TACHYON v1.5.23 (1.5x UPSCALE + BLUE GLASS + FULLBRIGHT + MULTI-PLAYER GRIEF ALARM)
---// Features: Fullscreen Intro, Shooting Stars, Tachyon UI, Tab Sparks, Chat Bot, Fly System, FullBright, Click Detector Grief Alarm, Anti Killbrick, Anti Glitch
+--// TACHYON v1.5.23 (1.5x UPSCALE + BLUE GLASS + FULLBRIGHT + MULTI-PLAYER GRIEF ALARM + GRIEFERHUB)
+--// Features: Fullscreen Intro, Shooting Stars, Tachyon UI, Tab Sparks, Chat Bot, Fly System, FullBright, Click Detector Grief Alarm, Anti Killbrick, Anti Glitch, GrieferHub
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -698,7 +698,7 @@ end)
 local antiGlitchEnabled = false
 local antiGlitchConnection = nil
 local lastSafeCFrame = nil
-local MAX_DISPLACEMENT_THRESHOLD = 800 -- Jarak dalam stud jika mendadak terlempar/mental
+local MAX_DISPLACEMENT_THRESHOLD = 800
 
 local function setAntiGlitch(state)
 	antiGlitchEnabled = state
@@ -722,7 +722,6 @@ local function setAntiGlitch(state)
 				local dist = (root.Position - lastSafeCFrame.Position).Magnitude
 				local speed = root.AssemblyLinearVelocity.Magnitude
 
-				-- Cek apakah karakter mental melebihi threshold atau berkecepatan abnormal
 				if dist >= MAX_DISPLACEMENT_THRESHOLD or speed >= 3500 then
 					pcall(function()
 						root.AssemblyLinearVelocity = Vector3.zero
@@ -731,7 +730,6 @@ local function setAntiGlitch(state)
 					end)
 					sendBlueChatMessage("[TACHYON] Anti Glitch: Glitch terdeteksi! Posisi dikembalikan 🛡️⚠️")
 				else
-					-- Update posisi aman jika pergerakan wajar
 					lastSafeCFrame = root.CFrame
 				end
 			end
@@ -1505,7 +1503,7 @@ styleButton(uncursedBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180)
 uncursedBtn.MouseButton1Click:Connect(function() uncursed() end)
 
 ----------------------------------------------------------
--- [4] TAB TCO (ENLIGHTEN, SPAM ALARM, GRIEF ALARM CLICK DETECTOR)
+-- [4] TAB TCO
 ----------------------------------------------------------
 local enlightenAlarmBtn = Instance.new("TextButton", tcoScroll)
 enlightenAlarmBtn.Size = UDim2.new(0, 480, 0, 44)
@@ -1633,9 +1631,6 @@ local function monitorPlayerFolder(playerFolder)
 	end)
 end
 
-----------------------------------------------------------
--- GRIEF ALARM: MULTI-PLAYER CLICK DETECTOR & DELETE LOGIC
-----------------------------------------------------------
 local griefAlarmBtn = Instance.new("TextButton", tcoScroll)
 griefAlarmBtn.Size = UDim2.new(0, 480, 0, 44)
 griefAlarmBtn.Text = "Grief Alarm: OFF"
@@ -2009,7 +2004,7 @@ openBotChatBtn.MouseButton1Click:Connect(function() botChatModal.Visible = true 
 backBotChatBtn.MouseButton1Click:Connect(function() botChatModal.Visible = false end)
 
 ----------------------------------------------------------
--- [5] TAB TROLL
+-- [5] TAB TROLL (DITAMBAHKAN TOMBOL GRIEFER HUB)
 ----------------------------------------------------------
 local flingBtn = Instance.new("TextButton")
 flingBtn.Size = UDim2.new(0, 330, 0, 44)
@@ -2050,6 +2045,24 @@ flingBtn.MouseButton1Click:Connect(function()
 		flingBtn.Text = "Fling Touch: OFF"
 		styleButton(flingBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
 	end
+end)
+
+-- Tombol GrieferHub
+local grieferHubBtn = Instance.new("TextButton")
+grieferHubBtn.Size = UDim2.new(0, 330, 0, 44)
+grieferHubBtn.Text = "GrieferHub 🌐"
+grieferHubBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+grieferHubBtn.Font = Enum.Font.SourceSansBold
+grieferHubBtn.TextSize = 16
+grieferHubBtn.LayoutOrder = 2
+grieferHubBtn.Parent = trollScroll
+styleButton(grieferHubBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
+
+grieferHubBtn.MouseButton1Click:Connect(function()
+	pcall(function()
+		loadstring(game:HttpGet("https://rawscripts.net/raw/The-Chosen-One-GrieferHub-244550"))()
+	end)
+	sendBlueChatMessage("[TACHYON] GrieferHub executed! 🚀")
 end)
 
 ----------------------------------------------------------
@@ -2209,7 +2222,6 @@ antiKillbrickBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Tombol Baru: Anti Glitch
 local antiGlitchBtn = Instance.new("TextButton")
 antiGlitchBtn.Size = UDim2.new(0, 330, 0, 44)
 antiGlitchBtn.Text = "Anti Glitch: OFF"
@@ -2295,7 +2307,7 @@ local function startFly()
 end
 
 ----------------------------------------------------------
--- CHAT COMMAND SYSTEM
+-- CHAT COMMAND SYSTEM (DITAMBAHKAN :grieferhub / :ghub)
 ----------------------------------------------------------
 local targetLoopSpeed = 16
 local loopSpeedActive = false
@@ -2324,6 +2336,11 @@ player.Chatted:Connect(function(msg)
 		setGriefAlarm(true)
 	elseif cmd == ":ungriefalarm" then
 		setGriefAlarm(false)
+	elseif cmd == ":grieferhub" or cmd == ":ghub" then
+		pcall(function()
+			loadstring(game:HttpGet("https://rawscripts.net/raw/The-Chosen-One-GrieferHub-244550"))()
+		end)
+		sendBlueChatMessage("[TACHYON] GrieferHub executed via chat! 🚀")
 	elseif cmd == ":fullbright" or cmd == ":bright" then
 		setFullBright(true)
 		fullBrightBtn.Text = "FullBright: ON"
