@@ -1,28 +1,21 @@
---// STANDALONE BUILD, SHAPE & PAINT (FULL RECORDER SYSTEM)
---// Merekam Build, Shape (Multi-Side Decrease), dan Paint (Warna & Material) secara utuh
+--// STANDALONE BUILD, SHAPE (INCREASE/DECREASE) & PAINT (FULL RECORDER)
+--// Mendukung penuh aksi Increase, Decrease multi-side, Paint, dan 5 Slot Interaktif
 
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local HttpService = game:GetService("HttpService")
 
 local player = Players.LocalPlayer
-local PlayerGui = player:WaitForChild("PlayerGui")
+local playerGui = player:WaitForChild("PlayerGui")
 
-local targetParent = PlayerGui
 pcall(function()
-	if gethui then targetParent = gethui()
-	elseif CoreGui and pcall(function() return CoreGui.Name end) then targetParent = CoreGui end
+	if playerGui:FindFirstChild("TachyonBuildShapeTool") then
+		playerGui.TachyonBuildShapeTool:Destroy()
+	end
 end)
 
-for _, p in ipairs({targetParent, PlayerGui}) do
-	local old = p:FindFirstChild("TachyonBuildShapeTool")
-	if old then old:Destroy() end
-end
-
-local saveFileName = "Tachyon_Building_Save.json"
-
 ----------------------------------------------------------
--- 1. GLOBAL SPY RECORDER (SHAPE + PAINT)
+-- 1. GLOBAL SPY RECORDER (INCREASE + DECREASE + PAINT)
 ----------------------------------------------------------
 local partActions = {}
 
@@ -42,11 +35,13 @@ oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
 					local action = tostring(args[4])
 					local targetPart = args[1]
 					
-					if action == "decrease" and typeof(targetPart) == "Instance" and targetPart:IsA("BasePart") then
+					-- Merekam aksi "decrease" maupun "increase" secara akurat
+					if (action == "decrease" or action == "increase") and typeof(targetPart) == "Instance" and targetPart:IsA("BasePart") then
 						if not partActions[targetPart] then partActions[targetPart] = {} end
 						
 						table.insert(partActions[targetPart], {
 							Type = "Shape",
+							ActionType = action, -- Menyimpan status "increase" atau "decrease"
 							NormalId = args[2] or Enum.NormalId.Top
 						})
 					end
@@ -60,14 +55,12 @@ oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
 							Type = "Paint",
 							NormalId = args[2] or Enum.NormalId.Top,
 							ColorMode = args[4],
-							ColorObj = args[5], -- Bisa Color3 atau nil
+							ColorObj = args[5],
 							Material = args[6],
 							Extra = args[7]
 						})
 					end
 					
-				elseif toolName == "Build" then
-					-- Pass
 				elseif toolName == "Delete" then
 					local targetPart = args[1]
 					if typeof(targetPart) == "Instance" and targetPart:IsA("BasePart") then
@@ -109,9 +102,6 @@ local function getRemote(toolName)
 	return tool:FindFirstChild("Event") or tool:FindFirstChildOfClass("RemoteEvent")
 end
 
-----------------------------------------------------------
--- KALKULATOR TITIK PERMUKAAN
-----------------------------------------------------------
 local function getSurfaceVector(part, normalId)
 	local pos = part.Position
 	local size = part.Size
@@ -134,9 +124,13 @@ local function getSurfaceVector(part, normalId)
 end
 
 ----------------------------------------------------------
--- 2. SAVE & LOAD SYSTEM (DENGAN DUKUNGAN PAINT)
+-- SAVE & LOAD CORE
 ----------------------------------------------------------
-local function saveBuilding(statusLabel)
+local function getFileName(slotName)
+	return "Tachyon_Build_" .. slotName .. ".json"
+end
+
+local function saveBuilding(slotName, statusLabel)
 	local rawBricks = {}
 	local bFolder = workspace:FindFirstChild("Bricks")
 	if not bFolder then return end
@@ -147,12 +141,12 @@ local function saveBuilding(statusLabel)
 	for _, obj in ipairs(myFolder:GetChildren()) do
 		if obj:IsA("BasePart") then
 			local actions = partActions[obj] or {}
-			
 			local serializedActions = {}
 			for _, act in ipairs(actions) do
 				if act.Type == "Shape" then
 					table.insert(serializedActions, {
 						Type = "Shape",
+						ActionType = act.ActionType, -- Menyimpan aksi "increase" / "decrease"
 						NormalName = tostring(act.NormalId.Name)
 					})
 				elseif act.Type == "Paint" then
@@ -169,7 +163,6 @@ local function saveBuilding(statusLabel)
 					})
 				end
 			end
-			
 			table.insert(rawBricks, {
 				Pos = {X = obj.Position.X, Y = obj.Position.Y, Z = obj.Position.Z},
 				Actions = serializedActions
@@ -179,21 +172,20 @@ local function saveBuilding(statusLabel)
 
 	pcall(function()
 		if writefile then
-			writefile(saveFileName, HttpService:JSONEncode(rawBricks))
+			writefile(getFileName(slotName), HttpService:JSONEncode(rawBricks))
 		end
 	end)
 
 	if statusLabel then
-		statusLabel.Text = "Saved to File (" .. #rawBricks .. ")"
+		statusLabel.Text = "Saved: " .. slotName .. " (" .. #rawBricks .. " blocks)"
 	end
 end
 
-local function loadBuilding(statusLabel)
+local function loadBuilding(slotName, statusLabel)
 	local rawBricks = {}
-
 	pcall(function()
 		if readfile then
-			local success, content = pcall(readfile, saveFileName)
+			local success, content = pcall(readfile, getFileName(slotName))
 			if success and content then
 				rawBricks = HttpService:JSONDecode(content)
 			end
@@ -201,7 +193,7 @@ local function loadBuilding(statusLabel)
 	end)
 
 	if not rawBricks or #rawBricks == 0 then
-		if statusLabel then statusLabel.Text = "No save file found!" end
+		if statusLabel then statusLabel.Text = "Slot '" .. slotName .. "' is empty!" end
 		return
 	end
 
@@ -212,7 +204,7 @@ local function loadBuilding(statusLabel)
 	end
 
 	task.spawn(function()
-		if statusLabel then statusLabel.Text = "Building & Painting..." end
+		if statusLabel then statusLabel.Text = "Loading " .. slotName .. "..." end
 		local bFolder = workspace:FindFirstChild("Bricks")
 		local myFolder = bFolder and bFolder:FindFirstChild(player.Name)
 
@@ -230,7 +222,6 @@ local function loadBuilding(statusLabel)
 				end)
 			end
 
-			-- 1. Spawn balok dasar
 			pcall(function()
 				currentBuildRem:FireServer(workspace.Terrain, Enum.NormalId.Top, targetPos, "normal")
 			end)
@@ -251,7 +242,6 @@ local function loadBuilding(statusLabel)
 				end
 			end
 
-			-- 2. Jalankan ulang aksi (Shape Decrease atau Paint) secara berurutan
 			if newPart and data.Actions and #data.Actions > 0 then
 				local shapeRem = getRemote("Shape")
 				local paintRem = getRemote("Paint")
@@ -261,12 +251,8 @@ local function loadBuilding(statusLabel)
 					local surfaceVector = getSurfaceVector(newPart, targetNormal)
 
 					if act.Type == "Shape" and shapeRem then
-						local args = {
-							[1] = newPart,
-							[2] = targetNormal,
-							[3] = surfaceVector,
-							[4] = "decrease"
-						}
+						local actString = act.ActionType or "decrease"
+						local args = { [1] = newPart, [2] = targetNormal, [3] = surfaceVector, [4] = actString }
 						pcall(function() shapeRem:FireServer(unpack(args)) end)
 
 						local oldSize = newPart.Size
@@ -279,40 +265,31 @@ local function loadBuilding(statusLabel)
 
 					elseif act.Type == "Paint" and paintRem then
 						local colorVal = act.HasColor and Color3.new(act.R, act.G, act.B) or nil
-						local args = {
-							[1] = newPart,
-							[2] = targetNormal,
-							[3] = surfaceVector,
-							[4] = act.ColorMode,
-							[5] = colorVal,
-							[6] = act.Material,
-							[7] = act.Extra or ""
-						}
+						local args = { [1] = newPart, [2] = targetNormal, [3] = surfaceVector, [4] = act.ColorMode, [5] = colorVal, [6] = act.Material, [7] = act.Extra or "" }
 						pcall(function() paintRem:FireServer(unpack(args)) end)
 						task.wait(0.08)
 					end
 				end
 			end
-			
 			task.wait(0.05)
 		end
 
-		if statusLabel then statusLabel.Text = "Loaded successfully!" end
+		if statusLabel then statusLabel.Text = "Loaded " .. slotName .. "!" end
 	end)
 end
 
 ----------------------------------------------------------
--- GUI
+-- GUI INTERAKTIF (5 SLOT NYATA)
 ----------------------------------------------------------
 local sg = Instance.new("ScreenGui")
 sg.Name = "TachyonBuildShapeTool"
 sg.ResetOnSpawn = false
 sg.DisplayOrder = 9999
-sg.Parent = targetParent
+sg.Parent = playerGui
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 210, 0, 150)
-frame.Position = UDim2.new(0.02, 0, 0.35, 0)
+frame.Size = UDim2.new(0, 260, 0, 325)
+frame.Position = UDim2.new(0.02, 0, 0.3, 0)
 frame.BackgroundColor3 = Color3.fromRGB(15, 25, 45)
 frame.BorderSizePixel = 0
 frame.Active = true
@@ -325,52 +302,87 @@ stroke.Color = Color3.fromRGB(0, 170, 255)
 stroke.Thickness = 1.8
 
 local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1, 0, 0, 28)
-title.Text = "SHAPE & PAINT BUILDER"
+title.Size = UDim2.new(1, 0, 0, 26)
+title.Text = "5-SLOT BUILD MANAGER"
 title.TextColor3 = Color3.fromRGB(0, 220, 255)
 title.Font = Enum.Font.SourceSansBold
-title.TextSize = 13
+title.TextSize = 14
 title.BackgroundTransparency = 1
 
 local statusLabel = Instance.new("TextLabel", frame)
 statusLabel.Size = UDim2.new(1, 0, 0, 18)
-statusLabel.Position = UDim2.new(0, 0, 0, 26)
-statusLabel.Text = "Ready"
+statusLabel.Position = UDim2.new(0, 0, 0, 24)
+statusLabel.Text = "Ready (Increase & Decrease Active)"
 statusLabel.TextColor3 = Color3.fromRGB(180, 200, 220)
 statusLabel.Font = Enum.Font.SourceSans
-statusLabel.TextSize = 12
+statusLabel.TextSize = 11
 statusLabel.BackgroundTransparency = 1
 
-local saveBtn = Instance.new("TextButton", frame)
-saveBtn.Size = UDim2.new(0.44, 0, 0, 36)
-saveBtn.Position = UDim2.new(0.04, 0, 0, 52)
-saveBtn.Text = "Save 💾"
-saveBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-saveBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
-saveBtn.Font = Enum.Font.SourceSansBold
-saveBtn.TextSize = 13
-Instance.new("UICorner", saveBtn).CornerRadius = UDim.new(0, 6)
+local slotContainer = Instance.new("Frame", frame)
+slotContainer.Size = UDim2.new(0.92, 0, 0, 160)
+slotContainer.Position = UDim2.new(0.04, 0, 0, 46)
+slotContainer.BackgroundTransparency = 1
 
-local loadBtn = Instance.new("TextButton", frame)
-loadBtn.Size = UDim2.new(0.44, 0, 0, 36)
-loadBtn.Position = UDim2.new(0.52, 0, 0, 52)
-loadBtn.Text = "Load 🏗️"
-loadBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-loadBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 90)
-loadBtn.Font = Enum.Font.SourceSansBold
-loadBtn.TextSize = 13
-Instance.new("UICorner", loadBtn).CornerRadius = UDim.new(0, 6)
+local slotListLayout = Instance.new("UIListLayout", slotContainer)
+slotListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+slotListLayout.Padding = UDim.new(0, 6)
+
+for i = 1, 5 do
+	local slotName = "Slot" .. i
+	
+	local row = Instance.new("Frame", slotContainer)
+	row.Size = UDim2.new(1, 0, 0, 26)
+	row.BackgroundTransparency = 1
+	row.LayoutOrder = i
+	
+	local lbl = Instance.new("TextLabel", row)
+	lbl.Size = UDim2.new(0.38, 0, 1, 0)
+	lbl.Text = "Slot " .. i
+	lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+	lbl.Font = Enum.Font.SourceSansBold
+	lbl.TextSize = 13
+	lbl.TextXAlignment = Enum.TextXAlignment.Left
+	lbl.BackgroundTransparency = 1
+	
+	local saveSBtn = Instance.new("TextButton", row)
+	saveSBtn.Size = UDim2.new(0.28, 0, 1, 0)
+	saveSBtn.Position = UDim2.new(0.40, 0, 0, 0)
+	saveSBtn.Text = "Save 💾"
+	saveSBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	saveSBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+	saveSBtn.Font = Enum.Font.SourceSansBold
+	saveSBtn.TextSize = 12
+	Instance.new("UICorner", saveSBtn).CornerRadius = UDim.new(0, 5)
+	
+	local loadSBtn = Instance.new("TextButton", row)
+	loadSBtn.Size = UDim2.new(0.28, 0, 1, 0)
+	loadSBtn.Position = UDim2.new(0.72, 0, 0, 0)
+	loadSBtn.Text = "Load 🏗️"
+	loadSBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	loadSBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 90)
+	loadSBtn.Font = Enum.Font.SourceSansBold
+	loadSBtn.TextSize = 12
+	Instance.new("UICorner", loadSBtn).CornerRadius = UDim.new(0, 5)
+	
+	saveSBtn.MouseButton1Click:Connect(function()
+		saveBuilding(slotName, statusLabel)
+	end)
+	
+	loadSBtn.MouseButton1Click:Connect(function()
+		loadBuilding(slotName, statusLabel)
+	end)
+end
 
 local closeBtn = Instance.new("TextButton", frame)
-closeBtn.Size = UDim2.new(0.92, 0, 0, 28)
-closeBtn.Position = UDim2.new(0.04, 0, 0, 102)
-closeBtn.Text = "Tutup Tool [X]"
+closeBtn.Size = UDim2.new(0.92, 0, 0, 42)
+closeBtn.Position = UDim2.new(0.04, 0, 0, 216)
+closeBtn.Text = "Close"
 closeBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
-closeBtn.BackgroundColor3 = Color3.fromRGB(30, 35, 50)
+closeBtn.BackgroundColor3 = Color3.fromRGB(35, 45, 70)
 closeBtn.Font = Enum.Font.SourceSansBold
-closeBtn.TextSize = 12
-Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
+closeBtn.TextSize = 18
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 8)
 
-saveBtn.MouseButton1Click:Connect(function() saveBuilding(statusLabel) end)
-loadBtn.MouseButton1Click:Connect(function() loadBuilding(statusLabel) end)
-closeBtn.MouseButton1Click:Connect(function() sg:Destroy() end)
+closeBtn.MouseButton1Click:Connect(function()
+	sg:Destroy()
+end)
