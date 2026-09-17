@@ -1,5 +1,5 @@
 --// TACHYON v1.5.23 (1.5x UPSCALE + BLUE GLASS + FULLBRIGHT + MULTI-PLAYER GRIEF ALARM)
---// Features: Fullscreen Intro, Shooting Stars, Tachyon UI, Tab Sparks, Chat Bot, Fly System, FullBright, Click Detector Grief Alarm
+--// Features: Fullscreen Intro, Shooting Stars, Tachyon UI, Tab Sparks, Chat Bot, Fly System, FullBright, Click Detector Grief Alarm, Anti Killbrick, Anti Glitch
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -593,6 +593,165 @@ plr.CharacterAdded:Connect(function()
 	if antiDragEnabled then
 		task.wait(0.5)
 		if antiDragEnabled then StartAntiDrag() end
+	end
+end)
+
+----------------------------------------------------------
+-- ANTI KILLBRICK SYSTEM (AUTO DISARM TOUCH & IMMUNITY)
+----------------------------------------------------------
+local antiKillbrickEnabled = false
+local antiKillbrickLoop = nil
+local originalCanTouchCache = {}
+
+local function neutralisePart(part)
+	if part:IsA("BasePart") then
+		local isMyChar = false
+		if player.Character and part:IsDescendantOf(player.Character) then
+			isMyChar = true
+		end
+		if not isMyChar then
+			for _, child in ipairs(part:GetChildren()) do
+				if child:IsA("TouchTransmitter") then
+					pcall(function() child:Destroy() end)
+				end
+			end
+			if part.CanTouch then
+				originalCanTouchCache[part] = true
+				pcall(function() part.CanTouch = false end)
+			end
+		end
+	end
+end
+
+local function restoreNeutralisedParts()
+	for part, val in pairs(originalCanTouchCache) do
+		if part and part.Parent then
+			pcall(function() part.CanTouch = val end)
+		end
+	end
+	originalCanTouchCache = {}
+end
+
+local function setAntiKillbrick(state)
+	antiKillbrickEnabled = state
+	if antiKillbrickEnabled then
+		task.spawn(function()
+			for _, desc in ipairs(workspace:GetDescendants()) do
+				if not antiKillbrickEnabled then break end
+				neutralisePart(desc)
+			end
+		end)
+
+		antiKillbrickLoop = RunService.Stepped:Connect(function()
+			if not antiKillbrickEnabled then return end
+			local char = player.Character
+			if char then
+				local hum = char:FindFirstChildOfClass("Humanoid")
+				if hum then
+					pcall(function()
+						hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+					end)
+				end
+			end
+		end)
+		sendBlueChatMessage("[TACHYON] Anti Killbrick Activated: ON 🛡️🧱")
+	else
+		if antiKillbrickLoop then
+			antiKillbrickLoop:Disconnect()
+			antiKillbrickLoop = nil
+		end
+		local char = player.Character
+		if char then
+			local hum = char:FindFirstChildOfClass("Humanoid")
+			if hum then
+				pcall(function()
+					hum:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
+				end)
+			end
+		end
+		restoreNeutralisedParts()
+		sendBlueChatMessage("[TACHYON] Anti Killbrick Deactivated: OFF ❌")
+	end
+end
+
+workspace.DescendantAdded:Connect(function(desc)
+	if antiKillbrickEnabled then
+		task.wait(0.05)
+		neutralisePart(desc)
+	end
+end)
+
+player.CharacterAdded:Connect(function(char)
+	if antiKillbrickEnabled then
+		local hum = char:WaitForChild("Humanoid", 5)
+		if hum then
+			pcall(function()
+				hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+			end)
+		end
+	end
+end)
+
+----------------------------------------------------------
+-- ANTI GLITCH SYSTEM (TELEPORT / FLING SAFEGUARD)
+----------------------------------------------------------
+local antiGlitchEnabled = false
+local antiGlitchConnection = nil
+local lastSafeCFrame = nil
+local MAX_DISPLACEMENT_THRESHOLD = 800 -- Jarak dalam stud jika mendadak terlempar/mental
+
+local function setAntiGlitch(state)
+	antiGlitchEnabled = state
+	if antiGlitchEnabled then
+		local char = player.Character
+		local hrp = char and char:FindFirstChild("HumanoidRootPart")
+		if hrp then lastSafeCFrame = hrp.CFrame end
+
+		if antiGlitchConnection then antiGlitchConnection:Disconnect() end
+		antiGlitchConnection = RunService.Heartbeat:Connect(function()
+			if not antiGlitchEnabled then return end
+			local c = player.Character
+			local root = c and c:FindFirstChild("HumanoidRootPart")
+			local hum = c and c:FindFirstChildOfClass("Humanoid")
+			if root and hum and hum.Health > 0 then
+				if not lastSafeCFrame then
+					lastSafeCFrame = root.CFrame
+					return
+				end
+
+				local dist = (root.Position - lastSafeCFrame.Position).Magnitude
+				local speed = root.AssemblyLinearVelocity.Magnitude
+
+				-- Cek apakah karakter mental melebihi threshold atau berkecepatan abnormal
+				if dist >= MAX_DISPLACEMENT_THRESHOLD or speed >= 3500 then
+					pcall(function()
+						root.AssemblyLinearVelocity = Vector3.zero
+						root.AssemblyAngularVelocity = Vector3.zero
+						root.CFrame = lastSafeCFrame
+					end)
+					sendBlueChatMessage("[TACHYON] Anti Glitch: Glitch terdeteksi! Posisi dikembalikan 🛡️⚠️")
+				else
+					-- Update posisi aman jika pergerakan wajar
+					lastSafeCFrame = root.CFrame
+				end
+			end
+		end)
+		sendBlueChatMessage("[TACHYON] Anti Glitch Activated: ON 🌀🛡️")
+	else
+		if antiGlitchConnection then
+			antiGlitchConnection:Disconnect()
+			antiGlitchConnection = nil
+		end
+		lastSafeCFrame = nil
+		sendBlueChatMessage("[TACHYON] Anti Glitch Deactivated: OFF ❌")
+	end
+end
+
+player.CharacterAdded:Connect(function(char)
+	task.wait(0.5)
+	if antiGlitchEnabled then
+		local hrp = char:WaitForChild("HumanoidRootPart", 5)
+		if hrp then lastSafeCFrame = hrp.CFrame end
 	end
 end)
 
@@ -2029,6 +2188,49 @@ toSpawnBtn.Parent = miscScroll
 styleButton(toSpawnBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180), 0.2)
 toSpawnBtn.MouseButton1Click:Connect(function() teleportToSpawn() end)
 
+local antiKillbrickBtn = Instance.new("TextButton")
+antiKillbrickBtn.Size = UDim2.new(0, 330, 0, 44)
+antiKillbrickBtn.Text = "Anti Killbrick: OFF"
+antiKillbrickBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+antiKillbrickBtn.Font = Enum.Font.SourceSansBold
+antiKillbrickBtn.TextSize = 16
+antiKillbrickBtn.LayoutOrder = 8
+antiKillbrickBtn.Parent = miscScroll
+styleButton(antiKillbrickBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
+
+antiKillbrickBtn.MouseButton1Click:Connect(function()
+	setAntiKillbrick(not antiKillbrickEnabled)
+	if antiKillbrickEnabled then
+		antiKillbrickBtn.Text = "Anti Killbrick: ON"
+		styleButton(antiKillbrickBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60), 0.2)
+	else
+		antiKillbrickBtn.Text = "Anti Killbrick: OFF"
+		styleButton(antiKillbrickBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
+	end
+end)
+
+-- Tombol Baru: Anti Glitch
+local antiGlitchBtn = Instance.new("TextButton")
+antiGlitchBtn.Size = UDim2.new(0, 330, 0, 44)
+antiGlitchBtn.Text = "Anti Glitch: OFF"
+antiGlitchBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+antiGlitchBtn.Font = Enum.Font.SourceSansBold
+antiGlitchBtn.TextSize = 16
+antiGlitchBtn.LayoutOrder = 9
+antiGlitchBtn.Parent = miscScroll
+styleButton(antiGlitchBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
+
+antiGlitchBtn.MouseButton1Click:Connect(function()
+	setAntiGlitch(not antiGlitchEnabled)
+	if antiGlitchEnabled then
+		antiGlitchBtn.Text = "Anti Glitch: ON"
+		styleButton(antiGlitchBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60), 0.2)
+	else
+		antiGlitchBtn.Text = "Anti Glitch: OFF"
+		styleButton(antiGlitchBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
+	end
+end)
+
 ----------------------------------------------------------
 -- FLY SYSTEM LOGIC (FIXED 3D CAMERA FLIGHT)
 ----------------------------------------------------------
@@ -2102,7 +2304,23 @@ player.Chatted:Connect(function(msg)
 	local args = string.split(msg, " ")
 	local cmd = string.lower(args[1])
 
-	if cmd == ":griefalarm" then
+	if cmd == ":antiglitch" then
+		setAntiGlitch(true)
+		antiGlitchBtn.Text = "Anti Glitch: ON"
+		styleButton(antiGlitchBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60), 0.2)
+	elseif cmd == ":unantiglitch" then
+		setAntiGlitch(false)
+		antiGlitchBtn.Text = "Anti Glitch: OFF"
+		styleButton(antiGlitchBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
+	elseif cmd == ":antikillbrick" then
+		setAntiKillbrick(true)
+		antiKillbrickBtn.Text = "Anti Killbrick: ON"
+		styleButton(antiKillbrickBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60), 0.2)
+	elseif cmd == ":unantikillbrick" then
+		setAntiKillbrick(false)
+		antiKillbrickBtn.Text = "Anti Killbrick: OFF"
+		styleButton(antiKillbrickBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
+	elseif cmd == ":griefalarm" then
 		setGriefAlarm(true)
 	elseif cmd == ":ungriefalarm" then
 		setGriefAlarm(false)
