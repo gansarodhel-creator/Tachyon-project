@@ -1,0 +1,376 @@
+--// STANDALONE BUILD, SHAPE & PAINT (FULL RECORDER SYSTEM)
+--// Merekam Build, Shape (Multi-Side Decrease), dan Paint (Warna & Material) secara utuh
+
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local HttpService = game:GetService("HttpService")
+
+local player = Players.LocalPlayer
+local PlayerGui = player:WaitForChild("PlayerGui")
+
+local targetParent = PlayerGui
+pcall(function()
+	if gethui then targetParent = gethui()
+	elseif CoreGui and pcall(function() return CoreGui.Name end) then targetParent = CoreGui end
+end)
+
+for _, p in ipairs({targetParent, PlayerGui}) do
+	local old = p:FindFirstChild("TachyonBuildShapeTool")
+	if old then old:Destroy() end
+end
+
+local saveFileName = "Tachyon_Building_Save.json"
+
+----------------------------------------------------------
+-- 1. GLOBAL SPY RECORDER (SHAPE + PAINT)
+----------------------------------------------------------
+local partActions = {}
+
+local oldNamecall
+oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+	local method = getnamecallmethod()
+	
+	if method == "FireServer" and tostring(self.Name) == "Event" then
+		local args = {...}
+		
+		task.spawn(function()
+			pcall(function()
+				local tool = self:FindFirstAncestorOfClass("Tool")
+				local toolName = tool and tool.Name or ""
+				
+				if toolName == "Shape" then
+					local action = tostring(args[4])
+					local targetPart = args[1]
+					
+					if action == "decrease" and typeof(targetPart) == "Instance" and targetPart:IsA("BasePart") then
+						if not partActions[targetPart] then partActions[targetPart] = {} end
+						
+						table.insert(partActions[targetPart], {
+							Type = "Shape",
+							NormalId = args[2] or Enum.NormalId.Top
+						})
+					end
+					
+				elseif toolName == "Paint" then
+					local targetPart = args[1]
+					if typeof(targetPart) == "Instance" and targetPart:IsA("BasePart") then
+						if not partActions[targetPart] then partActions[targetPart] = {} end
+						
+						table.insert(partActions[targetPart], {
+							Type = "Paint",
+							NormalId = args[2] or Enum.NormalId.Top,
+							ColorMode = args[4],
+							ColorObj = args[5], -- Bisa Color3 atau nil
+							Material = args[6],
+							Extra = args[7]
+						})
+					end
+					
+				elseif toolName == "Build" then
+					-- Pass
+				elseif toolName == "Delete" then
+					local targetPart = args[1]
+					if typeof(targetPart) == "Instance" and targetPart:IsA("BasePart") then
+						partActions[targetPart] = nil
+					end
+				end
+			end)
+		end)
+	end
+	
+	return oldNamecall(self, ...)
+end)
+
+----------------------------------------------------------
+-- TOOL HELPERS
+----------------------------------------------------------
+local function equipTool(name)
+	local char = player.Character
+	if not char then return nil end
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	
+	local tool = char:FindFirstChild(name)
+	if tool then return tool end
+	
+	local bpTool = player.Backpack:FindFirstChild(name)
+	if bpTool and hum then
+		hum:EquipTool(bpTool)
+		task.wait(0.08)
+		return bpTool
+	end
+	return nil
+end
+
+local function getRemote(toolName)
+	local tool = equipTool(toolName)
+	if not tool then return nil end
+	local s = tool:FindFirstChild("Script") or tool:FindFirstChildOfClass("LocalScript")
+	if s then return s:FindFirstChild("Event") or s:FindFirstChildOfClass("RemoteEvent") end
+	return tool:FindFirstChild("Event") or tool:FindFirstChildOfClass("RemoteEvent")
+end
+
+----------------------------------------------------------
+-- KALKULATOR TITIK PERMUKAAN
+----------------------------------------------------------
+local function getSurfaceVector(part, normalId)
+	local pos = part.Position
+	local size = part.Size
+	
+	if normalId == Enum.NormalId.Top then
+		return Vector3.new(pos.X, pos.Y + (size.Y / 2), pos.Z)
+	elseif normalId == Enum.NormalId.Bottom then
+		return Vector3.new(pos.X, pos.Y - (size.Y / 2), pos.Z)
+	elseif normalId == Enum.NormalId.Back then
+		return Vector3.new(pos.X, pos.Y, pos.Z - (size.Z / 2))
+	elseif normalId == Enum.NormalId.Front then
+		return Vector3.new(pos.X, pos.Y, pos.Z + (size.Z / 2))
+	elseif normalId == Enum.NormalId.Right then
+		return Vector3.new(pos.X + (size.X / 2), pos.Y, pos.Z)
+	elseif normalId == Enum.NormalId.Left then
+		return Vector3.new(pos.X - (size.X / 2), pos.Y, pos.Z)
+	end
+	
+	return Vector3.new(pos.X, pos.Y + (size.Y / 2), pos.Z)
+end
+
+----------------------------------------------------------
+-- 2. SAVE & LOAD SYSTEM (DENGAN DUKUNGAN PAINT)
+----------------------------------------------------------
+local function saveBuilding(statusLabel)
+	local rawBricks = {}
+	local bFolder = workspace:FindFirstChild("Bricks")
+	if not bFolder then return end
+
+	local myFolder = bFolder:FindFirstChild(player.Name)
+	if not myFolder then return end
+
+	for _, obj in ipairs(myFolder:GetChildren()) do
+		if obj:IsA("BasePart") then
+			local actions = partActions[obj] or {}
+			
+			local serializedActions = {}
+			for _, act in ipairs(actions) do
+				if act.Type == "Shape" then
+					table.insert(serializedActions, {
+						Type = "Shape",
+						NormalName = tostring(act.NormalId.Name)
+					})
+				elseif act.Type == "Paint" then
+					table.insert(serializedActions, {
+						Type = "Paint",
+						NormalName = tostring(act.NormalId.Name),
+						ColorMode = act.ColorMode,
+						HasColor = (act.ColorObj ~= nil),
+						R = act.ColorObj and act.ColorObj.R or 0,
+						G = act.ColorObj and act.ColorObj.G or 0,
+						B = act.ColorObj and act.ColorObj.B or 0,
+						Material = act.Material,
+						Extra = act.Extra
+					})
+				end
+			end
+			
+			table.insert(rawBricks, {
+				Pos = {X = obj.Position.X, Y = obj.Position.Y, Z = obj.Position.Z},
+				Actions = serializedActions
+			})
+		end
+	end
+
+	pcall(function()
+		if writefile then
+			writefile(saveFileName, HttpService:JSONEncode(rawBricks))
+		end
+	end)
+
+	if statusLabel then
+		statusLabel.Text = "Saved to File (" .. #rawBricks .. ")"
+	end
+end
+
+local function loadBuilding(statusLabel)
+	local rawBricks = {}
+
+	pcall(function()
+		if readfile then
+			local success, content = pcall(readfile, saveFileName)
+			if success and content then
+				rawBricks = HttpService:JSONDecode(content)
+			end
+		end
+	end)
+
+	if not rawBricks or #rawBricks == 0 then
+		if statusLabel then statusLabel.Text = "No save file found!" end
+		return
+	end
+
+	local buildRem = getRemote("Build")
+	if not buildRem then
+		if statusLabel then statusLabel.Text = "Build tool missing!" end
+		return
+	end
+
+	task.spawn(function()
+		if statusLabel then statusLabel.Text = "Building & Painting..." end
+		local bFolder = workspace:FindFirstChild("Bricks")
+		local myFolder = bFolder and bFolder:FindFirstChild(player.Name)
+
+		for _, data in ipairs(rawBricks) do
+			local currentBuildRem = getRemote("Build")
+			if not currentBuildRem then break end
+
+			local targetPos = Vector3.new(data.Pos.X, data.Pos.Y, data.Pos.Z)
+			local newPart = nil
+			local conn = nil
+
+			if myFolder then
+				conn = myFolder.ChildAdded:Connect(function(child)
+					if child:IsA("BasePart") then newPart = child end
+				end)
+			end
+
+			-- 1. Spawn balok dasar
+			pcall(function()
+				currentBuildRem:FireServer(workspace.Terrain, Enum.NormalId.Top, targetPos, "normal")
+			end)
+
+			local timer = 0
+			while not newPart and timer < 0.6 do
+				task.wait(0.03)
+				timer = timer + 0.03
+			end
+			if conn then conn:Disconnect() end
+
+			if not newPart and myFolder then
+				for _, p in ipairs(myFolder:GetChildren()) do
+					if p:IsA("BasePart") and (Vector2.new(p.Position.X, p.Position.Z) - Vector2.new(targetPos.X, targetPos.Z)).Magnitude < 1.5 then
+						newPart = p
+						break
+					end
+				end
+			end
+
+			-- 2. Jalankan ulang aksi (Shape Decrease atau Paint) secara berurutan
+			if newPart and data.Actions and #data.Actions > 0 then
+				local shapeRem = getRemote("Shape")
+				local paintRem = getRemote("Paint")
+
+				for _, act in ipairs(data.Actions) do
+					local targetNormal = Enum.NormalId[act.NormalName] or Enum.NormalId.Top
+					local surfaceVector = getSurfaceVector(newPart, targetNormal)
+
+					if act.Type == "Shape" and shapeRem then
+						local args = {
+							[1] = newPart,
+							[2] = targetNormal,
+							[3] = surfaceVector,
+							[4] = "decrease"
+						}
+						pcall(function() shapeRem:FireServer(unpack(args)) end)
+
+						local oldSize = newPart.Size
+						local waitTimeout = 0
+						while newPart and newPart.Parent and (newPart.Size - oldSize).Magnitude < 0.05 and waitTimeout < 1.0 do
+							task.wait(0.05)
+							waitTimeout = waitTimeout + 0.05
+						end
+						task.wait(0.06)
+
+					elseif act.Type == "Paint" and paintRem then
+						local colorVal = act.HasColor and Color3.new(act.R, act.G, act.B) or nil
+						local args = {
+							[1] = newPart,
+							[2] = targetNormal,
+							[3] = surfaceVector,
+							[4] = act.ColorMode,
+							[5] = colorVal,
+							[6] = act.Material,
+							[7] = act.Extra or ""
+						}
+						pcall(function() paintRem:FireServer(unpack(args)) end)
+						task.wait(0.08)
+					end
+				end
+			end
+			
+			task.wait(0.05)
+		end
+
+		if statusLabel then statusLabel.Text = "Loaded successfully!" end
+	end)
+end
+
+----------------------------------------------------------
+-- GUI
+----------------------------------------------------------
+local sg = Instance.new("ScreenGui")
+sg.Name = "TachyonBuildShapeTool"
+sg.ResetOnSpawn = false
+sg.DisplayOrder = 9999
+sg.Parent = targetParent
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 210, 0, 150)
+frame.Position = UDim2.new(0.02, 0, 0.35, 0)
+frame.BackgroundColor3 = Color3.fromRGB(15, 25, 45)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+frame.Parent = sg
+
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+local stroke = Instance.new("UIStroke", frame)
+stroke.Color = Color3.fromRGB(0, 170, 255)
+stroke.Thickness = 1.8
+
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 28)
+title.Text = "SHAPE & PAINT BUILDER"
+title.TextColor3 = Color3.fromRGB(0, 220, 255)
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 13
+title.BackgroundTransparency = 1
+
+local statusLabel = Instance.new("TextLabel", frame)
+statusLabel.Size = UDim2.new(1, 0, 0, 18)
+statusLabel.Position = UDim2.new(0, 0, 0, 26)
+statusLabel.Text = "Ready"
+statusLabel.TextColor3 = Color3.fromRGB(180, 200, 220)
+statusLabel.Font = Enum.Font.SourceSans
+statusLabel.TextSize = 12
+statusLabel.BackgroundTransparency = 1
+
+local saveBtn = Instance.new("TextButton", frame)
+saveBtn.Size = UDim2.new(0.44, 0, 0, 36)
+saveBtn.Position = UDim2.new(0.04, 0, 0, 52)
+saveBtn.Text = "Save 💾"
+saveBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+saveBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+saveBtn.Font = Enum.Font.SourceSansBold
+saveBtn.TextSize = 13
+Instance.new("UICorner", saveBtn).CornerRadius = UDim.new(0, 6)
+
+local loadBtn = Instance.new("TextButton", frame)
+loadBtn.Size = UDim2.new(0.44, 0, 0, 36)
+loadBtn.Position = UDim2.new(0.52, 0, 0, 52)
+loadBtn.Text = "Load 🏗️"
+loadBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+loadBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 90)
+loadBtn.Font = Enum.Font.SourceSansBold
+loadBtn.TextSize = 13
+Instance.new("UICorner", loadBtn).CornerRadius = UDim.new(0, 6)
+
+local closeBtn = Instance.new("TextButton", frame)
+closeBtn.Size = UDim2.new(0.92, 0, 0, 28)
+closeBtn.Position = UDim2.new(0.04, 0, 0, 102)
+closeBtn.Text = "Tutup Tool [X]"
+closeBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+closeBtn.BackgroundColor3 = Color3.fromRGB(30, 35, 50)
+closeBtn.Font = Enum.Font.SourceSansBold
+closeBtn.TextSize = 12
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
+
+saveBtn.MouseButton1Click:Connect(function() saveBuilding(statusLabel) end)
+loadBtn.MouseButton1Click:Connect(function() loadBuilding(statusLabel) end)
+closeBtn.MouseButton1Click:Connect(function() sg:Destroy() end)
