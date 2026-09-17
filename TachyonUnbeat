@@ -1,5 +1,5 @@
---// TACHYON v1.5.23 (BLUE GLASS + FULLBRIGHT + MULTI-PLAYER GRIEF ALARM + GRIEFERHUB + 5-SLOT BUILDING LOADER)
---// Features: Fullscreen Intro, Shooting Stars, Tachyon UI, Tab Sparks, Chat Bot, Fly System, FullBright, Click Detector Grief Alarm, Anti Killbrick, Anti Glitch, GrieferHub, Building & Shape Tool Loader
+--// TACHYON v1.5.23 (BLUE GLASS + NOTIFIKASI KANAN + AUTO COPY DISCORD)
+--// Features: Popup Notifikasi Kanan (10 Detik), Auto Copy Link Discord, Fullscreen Intro, GrieferHub, 5-Slot Building Loader
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -33,8 +33,91 @@ for _, parent in ipairs({CoreGui, PlayerGui}) do
 		if parent:FindFirstChild("TachyonWareUI") then parent.TachyonWareUI:Destroy() end
 		if parent:FindFirstChild("TachyonIntro") then parent.TachyonIntro:Destroy() end
 		if parent:FindFirstChild("TachyonTopBarOpen") then parent.TachyonTopBarOpen:Destroy() end
+		if parent:FindFirstChild("TachyonStartupNotif") then parent.TachyonStartupNotif:Destroy() end
 	end)
 end
+
+----------------------------------------------------------
+-- 1. NOTIFIKASI KANAN ATAS (MUNCUL 10 DETIK + AUTO COPY)
+----------------------------------------------------------
+local discordLink = "https://discord.gg/nBn6mDAVV"
+
+-- Otomatis salin link discord ke clipboard
+pcall(function()
+	if setclipboard then
+		setclipboard(discordLink)
+	end
+end)
+
+local notifGui = Instance.new("ScreenGui")
+notifGui.Name = "TachyonStartupNotif"
+notifGui.ResetOnSpawn = false
+notifGui.DisplayOrder = 99999
+notifGui.Parent = targetGuiParent
+
+local notifFrame = Instance.new("Frame", notifGui)
+notifFrame.Size = UDim2.new(0, 280, 0, 95)
+-- Posisi awal di luar layar sebelah kanan
+notifFrame.Position = UDim2.new(1, 300, 0, 20)
+notifFrame.BackgroundColor3 = Color3.fromRGB(15, 25, 45)
+notifFrame.BackgroundTransparency = 0.15
+notifFrame.BorderSizePixel = 0
+
+Instance.new("UICorner", notifFrame).CornerRadius = UDim.new(0, 10)
+local notifStroke = Instance.new("UIStroke", notifFrame)
+notifStroke.Color = Color3.fromRGB(0, 170, 255)
+notifStroke.Thickness = 1.8
+
+local notifTitle = Instance.new("TextLabel", notifFrame)
+notifTitle.Size = UDim2.new(1, -16, 0, 24)
+notifTitle.Position = UDim2.new(0, 12, 0, 8)
+notifTitle.Text = "successfully loading tachyon ware"
+notifTitle.TextColor3 = Color3.fromRGB(0, 220, 255)
+notifTitle.Font = Enum.Font.SourceSansBold
+notifTitle.TextSize = 13
+notifTitle.BackgroundTransparency = 1
+notifTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+local notifSub = Instance.new("TextLabel", notifFrame)
+notifSub.Size = UDim2.new(1, -16, 0, 20)
+notifSub.Position = UDim2.new(0, 12, 0, 32)
+notifSub.Text = "Discord Link (Copied to Clipboard):"
+notifSub.TextColor3 = Color3.fromRGB(180, 200, 220)
+notifSub.Font = Enum.Font.SourceSans
+notifSub.TextSize = 11
+notifSub.BackgroundTransparency = 1
+notifSub.TextXAlignment = Enum.TextXAlignment.Left
+
+local linkBox = Instance.new("TextBox", notifFrame)
+linkBox.Size = UDim2.new(1, -24, 0, 26)
+linkBox.Position = UDim2.new(0, 12, 0, 56)
+linkBox.Text = discordLink
+linkBox.TextColor3 = Color3.fromRGB(255, 230, 0)
+linkBox.BackgroundColor3 = Color3.fromRGB(10, 18, 32)
+linkBox.Font = Enum.Font.Code
+linkBox.TextSize = 12
+linkBox.ClearTextOnFocus = false
+linkBox.TextEditable = false
+Instance.new("UICorner", linkBox).CornerRadius = UDim.new(0, 6)
+
+-- Animasi Masuk (Slide ke kiri)
+TweenService:Create(notifFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+	Position = UDim2.new(1, -300, 0, 20)
+}):Play()
+
+-- Hilangkan otomatis setelah 10 detik
+task.spawn(function()
+	task.wait(10)
+	pcall(function()
+		local tw = TweenService:Create(notifFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+			Position = UDim2.new(1, 300, 0, 20)
+		})
+		tw:Play()
+		tw.Completed:Connect(function()
+			notifGui:Destroy()
+		end)
+	end)
+end)
 
 ----------------------------------------------------------
 -- CLICK SOUND HELPER SYSTEM
