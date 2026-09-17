@@ -1,5 +1,5 @@
---// TACHYON v1.5.23 (1.5x UPSCALE + BLUE GLASS + FULLBRIGHT + MULTI-PLAYER GRIEF ALARM + GRIEFERHUB)
---// Features: Fullscreen Intro, Shooting Stars, Tachyon UI, Tab Sparks, Chat Bot, Fly System, FullBright, Click Detector Grief Alarm, Anti Killbrick, Anti Glitch, GrieferHub
+--// TACHYON v1.5.23 (BLUE GLASS + FULLBRIGHT + MULTI-PLAYER GRIEF ALARM + GRIEFERHUB + 5-SLOT BUILDING LOADER)
+--// Features: Fullscreen Intro, Shooting Stars, Tachyon UI, Tab Sparks, Chat Bot, Fly System, FullBright, Click Detector Grief Alarm, Anti Killbrick, Anti Glitch, GrieferHub, Building & Shape Tool Loader
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -1175,10 +1175,12 @@ local visualTab   = createTab("Visual", 3)
 local tcoTab      = createTab("TCO", 4)
 local trollTab    = createTab("Troll", 5)
 local miscTab     = createTab("Misc", 6)
+local buildingTab = createTab("Building", 7) -- Tab Building
 
-local visualScroll = applyAutoLayout(visualTab)
-local trollScroll  = applyAutoLayout(trollTab)
-local miscScroll   = applyAutoLayout(miscTab)
+local visualScroll   = applyAutoLayout(visualTab)
+local trollScroll    = applyAutoLayout(trollTab)
+local miscScroll     = applyAutoLayout(miscTab)
+local buildingScroll = applyAutoLayout(buildingTab)
 
 local tcoScroll = Instance.new("ScrollingFrame", tcoTab)
 tcoScroll.Size = UDim2.new(1, 0, 1, 0)
@@ -2004,7 +2006,7 @@ openBotChatBtn.MouseButton1Click:Connect(function() botChatModal.Visible = true 
 backBotChatBtn.MouseButton1Click:Connect(function() botChatModal.Visible = false end)
 
 ----------------------------------------------------------
--- [5] TAB TROLL (DITAMBAHKAN TOMBOL GRIEFER HUB)
+-- [5] TAB TROLL
 ----------------------------------------------------------
 local flingBtn = Instance.new("TextButton")
 flingBtn.Size = UDim2.new(0, 330, 0, 44)
@@ -2047,7 +2049,6 @@ flingBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Tombol GrieferHub
 local grieferHubBtn = Instance.new("TextButton")
 grieferHubBtn.Size = UDim2.new(0, 330, 0, 44)
 grieferHubBtn.Text = "GrieferHub 🌐"
@@ -2244,6 +2245,26 @@ antiGlitchBtn.MouseButton1Click:Connect(function()
 end)
 
 ----------------------------------------------------------
+-- [7] TAB BUILDING (LOADSTRING TOOL)
+----------------------------------------------------------
+local launchBuildToolBtn = Instance.new("TextButton")
+launchBuildToolBtn.Size = UDim2.new(0, 330, 0, 44)
+launchBuildToolBtn.Text = "Launch Building & Shape Tool 🏗️"
+launchBuildToolBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+launchBuildToolBtn.Font = Enum.Font.SourceSansBold
+launchBuildToolBtn.TextSize = 16
+launchBuildToolBtn.LayoutOrder = 1
+launchBuildToolBtn.Parent = buildingScroll
+styleButton(launchBuildToolBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180), 0.2)
+
+launchBuildToolBtn.MouseButton1Click:Connect(function()
+	pcall(function()
+		loadstring(game:HttpGet("https://raw.githubusercontent.com/gansarodhel-creator/Tachyon-project/refs/heads/main/Tachyon%20build"))()
+	end)
+	sendBlueChatMessage("[TACHYON] Building & Shape Tool Loaded! 🚀")
+end)
+
+----------------------------------------------------------
 -- FLY SYSTEM LOGIC (FIXED 3D CAMERA FLIGHT)
 ----------------------------------------------------------
 local flying = false
@@ -2307,7 +2328,7 @@ local function startFly()
 end
 
 ----------------------------------------------------------
--- CHAT COMMAND SYSTEM (DITAMBAHKAN :grieferhub / :ghub)
+-- CHAT COMMAND SYSTEM
 ----------------------------------------------------------
 local targetLoopSpeed = 16
 local loopSpeedActive = false
@@ -2430,30 +2451,6 @@ player.Chatted:Connect(function(msg)
 		disarmDeathBtn.Text = "Disarm Death: OFF"
 		styleButton(disarmDeathBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
 		sendBlueChatMessage("[TACHYON] Disarm Death Deactivated ❌")
-	elseif cmd == ":delcubes" then
-		local char = player.Character
-		local hum = char and char:FindFirstChildOfClass("Humanoid")
-		local tool = player.Backpack:FindFirstChild("Delete") or (char and char:FindFirstChild("Delete"))
-		if tool and hum then
-			hum:EquipTool(tool)
-			task.wait(0.1)
-		end
-		local remoteEvent = player:FindFirstChild("Event")
-		local bFolder = workspace:FindFirstChild("Bricks")
-		if bFolder and remoteEvent then
-			for _, playerFolder in ipairs(bFolder:GetChildren()) do
-				if playerFolder.Name ~= player.Name then
-					for _, brick in ipairs(playerFolder:GetChildren()) do
-						if brick:IsA("BasePart") then
-							pcall(function()
-								remoteEvent:FireServer(brick, Enum.NormalId.Top, brick.Position, "delete")
-							end)
-						end
-					end
-				end
-			end
-		end
-		sendBlueChatMessage("[TACHYON] DelCubes executed via chat! 🗑️")
 	elseif cmd == ":reset" then
 		local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 		if hum then hum.Health = 0 end
