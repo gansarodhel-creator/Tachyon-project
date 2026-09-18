@@ -1,4 +1,4 @@
---// TACHYON v1.5.23 (BLUE GLASS + FULLBRIGHT + MULTI-PLAYER GRIEF ALARM + GRIEFERHUB + 5-SLOT BUILDING LOADER + ORBIT BRICKS)
+--// TACHYON v1.5.23 (BLUE GLASS + FULLBRIGHT + MULTI-PLAYER GRIEF ALARM + GRIEFERHUB + 5-SLOT BUILDING LOADER + ORBIT BRICKS NOCLIP)
 --// Features: Fullscreen Intro, Shooting Stars, Tachyon UI, Tab Sparks, Chat Bot, Fly System, FullBright, Click Detector Grief Alarm, Anti Killbrick, Anti Glitch, GrieferHub, Building Loader, Orbit Bricks
 
 local Players = game:GetService("Players")
@@ -1780,7 +1780,7 @@ openMusicModalBtn.LayoutOrder = 5
 styleButton(openMusicModalBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180), 0.2)
 
 ----------------------------------------------------------
--- [5] TAB TROLL (DITAMBAH FITUR ORBIT BRICKS)
+-- [5] TAB TROLL (DITAMBAH FITUR ORBIT BRICKS 2X JARAK & NOCLIP)
 ----------------------------------------------------------
 local flingBtn = Instance.new("TextButton")
 flingBtn.Size = UDim2.new(0, 330, 0, 44)
@@ -1840,10 +1840,11 @@ grieferHubBtn.MouseButton1Click:Connect(function()
 	sendBlueChatMessage("[TACHYON] GrieferHub executed! 🚀")
 end)
 
--- Tombol Orbit & Speed Box
+-- Tombol Orbit & Speed Box (Jarak 2x lipat & Noclip saat ON)
 local orbitActive = false
 local orbitSpeed = 5
 local orbitConnection = nil
+local noclipConnection = nil
 
 local orbitRow = Instance.new("Frame")
 orbitRow.Size = UDim2.new(0, 330, 0, 44)
@@ -1884,6 +1885,18 @@ orbitBtn.MouseButton1Click:Connect(function()
 		orbitBtn.Text = "Orbit Bricks: ON"
 		styleButton(orbitBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60), 0.2)
 		
+		-- Mengaktifkan Noclip pada karakter saat Orbit ON
+		noclipConnection = RunService.Stepped:Connect(function()
+			local char = player.Character
+			if char then
+				for _, part in ipairs(char:GetDescendants()) do
+					if part:IsA("BasePart") then
+						part.CanCollide = false
+					end
+				end
+			end
+		end)
+		
 		local angle = 0
 		orbitConnection = RunService.RenderStepped:Connect(function(dt)
 			angle = angle + (dt * orbitSpeed)
@@ -1906,22 +1919,30 @@ orbitBtn.MouseButton1Click:Connect(function()
 				if count > 0 then
 					for i, part in ipairs(targetParts) do
 						local rad = angle + ((i / count) * (math.pi * 2))
-						local radius = 8
+						local radius = 16 -- Jarak orbit diperlebar 2x lipat (dari 8 menjadi 16)
 						local x = math.cos(rad) * radius
 						local z = math.sin(rad) * radius
 						local targetPos = hrp.Position + Vector3.new(x, 3, z)
 						
 						pcall(function()
+							part.CanCollide = false
 							part.AssemblyLinearVelocity = (targetPos - part.Position) * 16
 						end)
 					end
 				end
 			end
 		end)
-		sendBlueChatMessage("[TACHYON] Orbit Bricks Activated 🪐")
+		sendBlueChatMessage("[TACHYON] Orbit Bricks Activated (2x Distance & Noclip ON) 🪐")
 	else
 		orbitBtn.Text = "Orbit Bricks: OFF"
 		styleButton(orbitBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
+		
+		-- Mematikan Noclip saat Orbit OFF
+		if noclipConnection then
+			noclipConnection:Disconnect()
+			noclipConnection = nil
+		end
+		
 		if orbitConnection then
 			orbitConnection:Disconnect()
 			orbitConnection = nil
@@ -2093,6 +2114,7 @@ antiGlitchBtn.Text = "Anti Glitch: OFF"
 antiGlitchBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 antiGlitchBtn.Font = Enum.Font.SourceSansBold
 antiGlitchBtn.TextSize = 16
+antiGlNumOrder = 9
 antiGlitchBtn.LayoutOrder = 9
 antiGlitchBtn.Parent = miscScroll
 styleButton(antiGlitchBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
