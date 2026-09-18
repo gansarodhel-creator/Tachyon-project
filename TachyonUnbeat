@@ -1,5 +1,5 @@
---// TACHYON v1.5.23 (BLUE GLASS + FULLBRIGHT + MULTI-PLAYER GRIEF ALARM + GRIEFERHUB + 5-SLOT BUILDING LOADER)
---// Features: Fullscreen Intro, Shooting Stars, Tachyon UI, Tab Sparks, Chat Bot, Fly System, FullBright, Click Detector Grief Alarm, Anti Killbrick, Anti Glitch, GrieferHub, Building & Shape Tool Loader
+--// TACHYON v1.5.23 (BLUE GLASS + FULLBRIGHT + MULTI-PLAYER GRIEF ALARM + GRIEFERHUB + 5-SLOT BUILDING LOADER + ORBIT BRICKS)
+--// Features: Fullscreen Intro, Shooting Stars, Tachyon UI, Tab Sparks, Chat Bot, Fly System, FullBright, Click Detector Grief Alarm, Anti Killbrick, Anti Glitch, GrieferHub, Building Loader, Orbit Bricks
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -1780,233 +1780,7 @@ openMusicModalBtn.LayoutOrder = 5
 styleButton(openMusicModalBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180), 0.2)
 
 ----------------------------------------------------------
--- MUSIC MODAL
-----------------------------------------------------------
-local musicModal = Instance.new("Frame", main)
-musicModal.Name = "TachyonMusicModal"
-musicModal.Size = UDim2.new(1, -165, 1, -42)
-musicModal.Position = UDim2.new(0, 165, 0, 42)
-musicModal.BackgroundColor3 = Color3.fromRGB(10, 20, 40)
-musicModal.BackgroundTransparency = 0.15
-musicModal.Visible = false
-musicModal.ZIndex = 50
-
-local modalTitle = Instance.new("TextLabel", musicModal)
-modalTitle.Size = UDim2.new(1, -120, 0, 40)
-modalTitle.Position = UDim2.new(0, 20, 0, 12)
-modalTitle.Text = "🎵 Music Player Full Content"
-modalTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-modalTitle.Font = Enum.Font.SourceSansBold
-modalTitle.TextSize = 18
-modalTitle.BackgroundTransparency = 1
-modalTitle.TextXAlignment = Enum.TextXAlignment.Left
-modalTitle.ZIndex = 51
-
-local backMusicBtn = Instance.new("TextButton", musicModal)
-backMusicBtn.Size = UDim2.new(0, 90, 0, 40)
-backMusicBtn.Position = UDim2.new(1, -105, 1, -55)
-backMusicBtn.Text = "< Back"
-backMusicBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-backMusicBtn.Font = Enum.Font.SourceSansBold
-backMusicBtn.TextSize = 16
-backMusicBtn.ZIndex = 51
-styleButton(backMusicBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
-
-local openBotChatBtn = Instance.new("TextButton", musicModal)
-openBotChatBtn.Size = UDim2.new(0, 130, 0, 40)
-openBotChatBtn.Position = UDim2.new(1, -250, 1, -55)
-openBotChatBtn.Text = "💬 Bot Chat"
-openBotChatBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-openBotChatBtn.Font = Enum.Font.SourceSansBold
-openBotChatBtn.TextSize = 15
-openBotChatBtn.ZIndex = 51
-styleButton(openBotChatBtn, Color3.fromRGB(180, 0, 180), Color3.fromRGB(100, 0, 100), 0.2)
-
-local infoMusicLabel = Instance.new("TextLabel", musicModal)
-infoMusicLabel.Size = UDim2.new(1, -40, 0, 30)
-infoMusicLabel.Position = UDim2.new(0, 20, 0, 52)
-infoMusicLabel.Text = "Music Player Active (Full Right Content View)"
-infoMusicLabel.TextColor3 = Color3.fromRGB(180, 205, 240)
-infoMusicLabel.BackgroundTransparency = 1
-infoMusicLabel.Font = Enum.Font.SourceSans
-infoMusicLabel.TextSize = 16
-infoMusicLabel.TextXAlignment = Enum.TextXAlignment.Left
-infoMusicLabel.ZIndex = 51
-
-local function createMusicEntry(titleName, assetId, yOffset)
-	local btn = Instance.new("TextButton", musicModal)
-	btn.Size = UDim2.new(0, 300, 0, 38)
-	btn.Position = UDim2.new(0, 20, 0, yOffset)
-	btn.Text = titleName
-	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-	btn.Font = Enum.Font.SourceSansBold
-	btn.TextSize = 16
-	btn.ZIndex = 51
-	styleButton(btn, Color3.fromRGB(25, 50, 85), Color3.fromRGB(15, 30, 60), 0.3)
-	btn.MouseButton1Click:Connect(function()
-		pcall(function() setclipboard(assetId) end)
-		sendBlueChatMessage("[TACHYON] Copied " .. titleName .. " ID: " .. assetId .. " 📋")
-	end)
-end
-
-createMusicEntry("shady gray", "125311992018245", 90)
-createMusicEntry("judas", "118314578679702", 136)
-createMusicEntry("rthro", "45819151", 182)
-createMusicEntry("admiring you", "136208016606825", 228)
-
-openMusicModalBtn.MouseButton1Click:Connect(function() musicModal.Visible = true end)
-backMusicBtn.MouseButton1Click:Connect(function() musicModal.Visible = false end)
-
-----------------------------------------------------------
--- BOT CHAT MODAL
-----------------------------------------------------------
-local botChatModal = Instance.new("Frame", main)
-botChatModal.Name = "TachyonBotChatModal"
-botChatModal.Size = UDim2.new(1, -165, 1, -42)
-botChatModal.Position = UDim2.new(0, 165, 0, 42)
-botChatModal.BackgroundColor3 = Color3.fromRGB(10, 20, 40)
-botChatModal.BackgroundTransparency = 0.15
-botChatModal.Visible = false
-botChatModal.ZIndex = 60
-
-local botChatModalTitle = Instance.new("TextLabel", botChatModal)
-botChatModalTitle.Size = UDim2.new(1, -120, 0, 40)
-botChatModalTitle.Position = UDim2.new(0, 20, 0, 12)
-botChatModalTitle.Text = "💬 Bot Chat Panel Content"
-botChatModalTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-botChatModalTitle.Font = Enum.Font.SourceSansBold
-botChatModalTitle.TextSize = 18
-botChatModalTitle.BackgroundTransparency = 1
-botChatModalTitle.TextXAlignment = Enum.TextXAlignment.Left
-botChatModalTitle.ZIndex = 61
-
-local backBotChatBtn = Instance.new("TextButton", botChatModal)
-backBotChatBtn.Size = UDim2.new(0, 90, 0, 40)
-backBotChatBtn.Position = UDim2.new(1, -105, 1, -55)
-backBotChatBtn.Text = "< Back"
-backBotChatBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-backBotChatBtn.Font = Enum.Font.SourceSansBold
-backBotChatBtn.TextSize = 16
-backBotChatBtn.ZIndex = 61
-styleButton(backBotChatBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
-
-local msgBox = Instance.new("TextBox", botChatModal)
-msgBox.Size = UDim2.new(0, 480, 0, 44)
-msgBox.Position = UDim2.new(0, 20, 0, 58)
-msgBox.PlaceholderText = "Tulis Pesan Bot Chat..."
-msgBox.Text = "Hello its me bot!!, im your assistant i will help you everytime!! 🤝🤝"
-msgBox.BackgroundColor3 = Color3.fromRGB(15, 32, 60)
-msgBox.BackgroundTransparency = 0.3
-msgBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-msgBox.Font = Enum.Font.SourceSans
-msgBox.TextSize = 16
-msgBox.ZIndex = 61
-Instance.new("UICorner", msgBox).CornerRadius = UDim.new(0, 8)
-
-local sendChatBtn = Instance.new("TextButton", botChatModal)
-sendChatBtn.Size = UDim2.new(0, 480, 0, 40)
-sendChatBtn.Position = UDim2.new(0, 20, 0, 110)
-sendChatBtn.Text = "Send Chat"
-sendChatBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-sendChatBtn.Font = Enum.Font.SourceSansBold
-sendChatBtn.TextSize = 16
-sendChatBtn.ZIndex = 61
-styleButton(sendChatBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60), 0.2)
-
-sendChatBtn.MouseButton1Click:Connect(function()
-	if msgBox.Text ~= "" then executePublicChat(msgBox.Text) end
-end)
-
-local sendHelloBtn = Instance.new("TextButton", botChatModal)
-sendHelloBtn.Size = UDim2.new(0, 480, 0, 40)
-sendHelloBtn.Position = UDim2.new(0, 20, 0, 158)
-sendHelloBtn.Text = "ohh hello!!, how are you buddy?? 😃😃"
-sendHelloBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-sendHelloBtn.Font = Enum.Font.SourceSansBold
-sendHelloBtn.TextSize = 15
-sendHelloBtn.ZIndex = 61
-styleButton(sendHelloBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(0, 80, 180), 0.2)
-
-sendHelloBtn.MouseButton1Click:Connect(function()
-	executePublicChat("ohh hello!!, how are you buddy?? 😃😃")
-end)
-
-local autoBotChatBtn = Instance.new("TextButton", botChatModal)
-autoBotChatBtn.Size = UDim2.new(0, 480, 0, 42)
-autoBotChatBtn.Position = UDim2.new(0, 20, 0, 208)
-autoBotChatBtn.Text = "Auto Bot Chat: OFF"
-autoBotChatBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-autoBotChatBtn.BackgroundColor3 = Color3.fromRGB(15, 32, 60)
-autoBotChatBtn.BackgroundTransparency = 0.35
-autoBotChatBtn.Font = Enum.Font.SourceSansBold
-autoBotChatBtn.TextSize = 16
-autoBotChatBtn.ZIndex = 61
-
-Instance.new("UICorner", autoBotChatBtn).CornerRadius = UDim.new(0, 8)
-local autoBotStroke = Instance.new("UIStroke", autoBotChatBtn)
-autoBotStroke.Color = Color3.fromRGB(255, 50, 50)
-autoBotStroke.Thickness = 1.5
-autoBotStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-addClickSound(autoBotChatBtn)
-
-local autoBotChatEnabled = false
-
-autoBotChatBtn.MouseButton1Click:Connect(function()
-	autoBotChatEnabled = not autoBotChatEnabled
-	if autoBotChatEnabled then
-		autoBotChatBtn.Text = "Auto Bot Chat: ON"
-		autoBotStroke.Color = Color3.fromRGB(0, 255, 100)
-		sendBlueChatMessage("[TACHYON] Auto Bot Chat Activated ✅ (Proximity & Welcome ON)")
-	else
-		autoBotChatBtn.Text = "Auto Bot Chat: OFF"
-		autoBotStroke.Color = Color3.fromRGB(255, 50, 50)
-		sendBlueChatMessage("[TACHYON] Auto Bot Chat Deactivated ❌")
-	end
-end)
-
-local function setupChatListener(p)
-	p.Chatted:Connect(function(msg)
-		if autoBotChatEnabled and p ~= player then
-			local myChar = player.Character
-			local otherChar = p.Character
-			if myChar and otherChar then
-				local myHrp = myChar:FindFirstChild("HumanoidRootPart")
-				local otherHrp = otherChar:FindFirstChild("HumanoidRootPart")
-				if myHrp and otherHrp then
-					local distance = (myHrp.Position - otherHrp.Position).Magnitude
-					if distance <= 15 then
-						local lowerMsg = string.lower(msg)
-						if string.find(lowerMsg, "hi") or string.find(lowerMsg, "hello") or string.find(lowerMsg, "halo") or string.find(lowerMsg, "hey") then
-							task.wait(0.4)
-							executePublicChat("ohh hello!!, how are you buddy?? 😃😃")
-						end
-					end
-				end
-			end
-		end
-	end)
-end
-
-local function setupPlayerJoin(p)
-	if p ~= player then
-		task.wait(2)
-		if autoBotChatEnabled then
-			executePublicChat("hello " .. p.Name .. " welcome to the server 👋🫵")
-		end
-	end
-end
-
-for _, p in ipairs(Players:GetPlayers()) do setupChatListener(p) end
-Players.PlayerAdded:Connect(function(newP)
-	setupChatListener(newP)
-	setupPlayerJoin(newP)
-end)
-
-openBotChatBtn.MouseButton1Click:Connect(function() botChatModal.Visible = true end)
-backBotChatBtn.MouseButton1Click:Connect(function() botChatModal.Visible = false end)
-
-----------------------------------------------------------
--- [5] TAB TROLL
+-- [5] TAB TROLL (DITAMBAH FITUR ORBIT BRICKS)
 ----------------------------------------------------------
 local flingBtn = Instance.new("TextButton")
 flingBtn.Size = UDim2.new(0, 330, 0, 44)
@@ -2064,6 +1838,96 @@ grieferHubBtn.MouseButton1Click:Connect(function()
 		loadstring(game:HttpGet("https://rawscripts.net/raw/The-Chosen-One-GrieferHub-244550"))()
 	end)
 	sendBlueChatMessage("[TACHYON] GrieferHub executed! 🚀")
+end)
+
+-- Tombol Orbit & Speed Box
+local orbitActive = false
+local orbitSpeed = 5
+local orbitConnection = nil
+
+local orbitRow = Instance.new("Frame")
+orbitRow.Size = UDim2.new(0, 330, 0, 44)
+orbitRow.BackgroundTransparency = 1
+orbitRow.LayoutOrder = 3
+orbitRow.Parent = trollScroll
+
+local orbitBtn = Instance.new("TextButton")
+orbitBtn.Size = UDim2.new(0, 210, 1, 0)
+orbitBtn.Text = "Orbit Bricks: OFF"
+orbitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+orbitBtn.Font = Enum.Font.SourceSansBold
+orbitBtn.TextSize = 16
+orbitBtn.Parent = orbitRow
+styleButton(orbitBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
+
+local speedBox = Instance.new("TextBox")
+speedBox.Size = UDim2.new(0, 110, 1, 0)
+speedBox.Position = UDim2.new(0, 220, 0, 0)
+speedBox.PlaceholderText = "Speed: 5"
+speedBox.Text = "5"
+speedBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+speedBox.BackgroundColor3 = Color3.fromRGB(15, 32, 60)
+speedBox.BackgroundTransparency = 0.3
+speedBox.Font = Enum.Font.SourceSansBold
+speedBox.TextSize = 16
+speedBox.Parent = orbitRow
+Instance.new("UICorner", speedBox).CornerRadius = UDim.new(0, 8)
+
+speedBox.FocusLost:Connect(function()
+	local val = tonumber(speedBox.Text)
+	if val then orbitSpeed = val end
+end)
+
+orbitBtn.MouseButton1Click:Connect(function()
+	orbitActive = not orbitActive
+	if orbitActive then
+		orbitBtn.Text = "Orbit Bricks: ON"
+		styleButton(orbitBtn, Color3.fromRGB(0, 200, 100), Color3.fromRGB(0, 120, 60), 0.2)
+		
+		local angle = 0
+		orbitConnection = RunService.RenderStepped:Connect(function(dt)
+			angle = angle + (dt * orbitSpeed)
+			local char = player.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			
+			if hrp then
+				local targetParts = {}
+				local bricksFolder = workspace:FindFirstChild("Bricks")
+				
+				if bricksFolder then
+					for _, desc in ipairs(bricksFolder:GetDescendants()) do
+						if desc:IsA("BasePart") and not desc.Anchored and desc:FindFirstChild("Drag") then
+							table.insert(targetParts, desc)
+						end
+					end
+				end
+				
+				local count = #targetParts
+				if count > 0 then
+					for i, part in ipairs(targetParts) do
+						local rad = angle + ((i / count) * (math.pi * 2))
+						local radius = 8
+						local x = math.cos(rad) * radius
+						local z = math.sin(rad) * radius
+						local targetPos = hrp.Position + Vector3.new(x, 3, z)
+						
+						pcall(function()
+							part.AssemblyLinearVelocity = (targetPos - part.Position) * 16
+						end)
+					end
+				end
+			end
+		end)
+		sendBlueChatMessage("[TACHYON] Orbit Bricks Activated 🪐")
+	else
+		orbitBtn.Text = "Orbit Bricks: OFF"
+		styleButton(orbitBtn, Color3.fromRGB(25, 45, 75), Color3.fromRGB(15, 25, 45), 0.3)
+		if orbitConnection then
+			orbitConnection:Disconnect()
+			orbitConnection = nil
+		end
+		sendBlueChatMessage("[TACHYON] Orbit Bricks Deactivated ❌")
+	end
 end)
 
 ----------------------------------------------------------
